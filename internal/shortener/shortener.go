@@ -2,7 +2,9 @@ package shortener
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -51,6 +53,10 @@ const (
 func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 	if url == "" {
 		return "", fmt.Errorf("URL cannot be empty")
+	}
+
+	if err := IsValidURL(url); err != nil {
+		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 
 	u := uuid.New()
@@ -120,6 +126,18 @@ func (s *shortener) Delete(ctx context.Context, shortCode string) error {
 		}
 
 		return fmt.Errorf("failed to delete URL: %w", err)
+	}
+
+	return nil
+}
+
+func IsValidURL(input string) error {
+	parsedURL, err := url.Parse(input)
+	if err != nil {
+		return errors.New("invalid URL format")
+	}
+	if parsedURL.Scheme == "" || parsedURL.Host == "" {
+		return errors.New("URL must have a scheme(http/https) and a host")
 	}
 
 	return nil
