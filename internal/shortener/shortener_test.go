@@ -42,6 +42,22 @@ func TestAdd(t *testing.T) {
 				return pgconn.NewCommandTag(""), errors.New("database error")
 			},
 		},
+		{
+			name:    "No URL scheme",
+			url:     "example.com",
+			isError: true,
+			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+				return pgconn.CommandTag{}, errors.New("No URL scheme")
+			},
+		},
+		{
+			name:    "No Scheme with invalid characters",
+			url:     ":/invalid-url",
+			isError: true,
+			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+				return pgconn.CommandTag{}, errors.New("invalid URL format")
+			},
+		},
 	}
 
 	for _, tc := range testCases {
