@@ -55,7 +55,7 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 		return "", fmt.Errorf("URL cannot be empty")
 	}
 
-	if err := IsValidURL(url); err != nil {
+	if err := isValidURL(url); err != nil {
 		return "", fmt.Errorf("invalid URL: %w", err)
 	}
 
@@ -131,7 +131,7 @@ func (s *shortener) Delete(ctx context.Context, shortCode string) error {
 	return nil
 }
 
-func IsValidURL(input string) error {
+func isValidURL(input string) error {
 	parsedURL, err := url.Parse(input)
 	if err != nil {
 		return errors.New("invalid URL format")
