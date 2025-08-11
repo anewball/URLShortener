@@ -2,10 +2,9 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"anewball.com/internal/shortener"
@@ -24,6 +23,36 @@ var rootCmd = &cobra.Command{
 	Short:   "A simple URL shortener service",
 	Long:    `A simple URL shortener service that allows you to shorten URLs and retrieve the original URLs using short codes.`,
 	Version: "0.1.0",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		if dbConnectionString == "" {
+			return cmd.Help()
+		}
+
+		ctx, cancel := context.WithTimeout(cmd.Context(), 20*time.Second)
+		defer cancel()
+
+		var err error
+		pool, err = pgxpool.New(ctx, dbConnectionString)
+		if err != nil {
+			log.Fatal("Unable to connect to database:", err)
+			return err
+		}
+
+		cmdShortener = initializeShortener(pool)
+		if cmdShortener == nil {
+			return fmt.Errorf("failed to initialize shortener")
+		}
+
+		log.Println("Connected to database successfully")
+		return nil
+	},
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		if pool != nil {
+			pool.Close()
+			log.Println("Database connection pool closed")
+		}
+		return nil
+	},
 }
 
 func Execute() {
@@ -35,7 +64,6 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(
 		initLoadEnv,
-		initConfig,
 	)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
@@ -49,39 +77,10 @@ func initLoadEnv() {
 		log.Print("No .env file found")
 	}
 
-	dbConnectionString = os.Getenv("DB_CONNECTION_STRING")
+	dbConnectionString = os.Getenv("DATABASE_URL")
 }
 
-func initConfig() {
-	// Configuration initialization logic can go here if needed
-	// For example, reading from a config file or environment variables
-	ctx, stop := context.WithCancel(context.Background())
-
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-
-	var err error
-	pool, err = pgxpool.New(ctx, dbConnectionString)
-	if err != nil {
-		log.Fatal("Unable to connect to database:", err)
-	}
-
-	cmdShortener = initializeShortener(pool)
-
-	// Goroutine to keep the pool alive
-	go func() {
-		<-c
-		log.Println("Shutting down gracefully...")
-
-		stop()
-
-		time.Sleep(2 * time.Second)
-		log.Println("Exiting...")
-		os.Exit(0)
-	}()
-}
-
-func initializeShortener(pool *pgxpool.Pool) shortener.Shortener{
+func initializeShortener(pool *pgxpool.Pool) shortener.Shortener {
 	if pool == nil {
 		log.Fatal("Database connection pool is not initialized")
 	}
