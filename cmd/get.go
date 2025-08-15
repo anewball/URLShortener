@@ -21,7 +21,7 @@ var getCmd = &cobra.Command{
 			return fmt.Errorf("internal: deps not set")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
 		originalUrl, err := deps.Shortener.Get(ctx, args[0])
