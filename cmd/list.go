@@ -29,7 +29,7 @@ var listCmd = &cobra.Command{
 			return fmt.Errorf("offset cannot be negative")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
 		urlItems, err := deps.Shortener.List(ctx, limit, offset)
