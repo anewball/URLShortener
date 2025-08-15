@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -19,16 +16,19 @@ var addCmd = &cobra.Command{
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		url := args[0]
+		deps := getDeps(cmd.Context())
+		if deps ==  nil {
+			return fmt.Errorf("internal: deps not set")
+		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		urlCode, err := cmdShortener.Add(ctx, url)
+		code, err := deps.Shortener.Add(ctx, args[0])
 		if err != nil {
 			return fmt.Errorf("failed to add URL: %w", err)
 		}
-		fmt.Printf("Shortened URL: %s/%s\n", "http://localhost:8080", urlCode)
+		fmt.Printf("Shortened URL: %s/%s\n", "http://localhost:8080", code)
 
 		return nil
 	},
