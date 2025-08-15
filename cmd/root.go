@@ -13,7 +13,6 @@ import (
 )
 
 var cfgFile string
-var pool *pgxpool.Pool
 
 var rootCmd = &cobra.Command{
 	Use:     "urlshortener",
@@ -38,7 +37,7 @@ var rootCmd = &cobra.Command{
 		cfg.MaxConnLifetime = 30 * time.Minute // Set maximum connection lifetime to 30 minutes
 		cfg.MaxConnIdleTime = 5 * time.Minute  // Set maximum idle time for connections to 5 minutes
 
-		pool, err = pgxpool.NewWithConfig(cmd.Context(), cfg)
+		pool, err := pgxpool.NewWithConfig(cmd.Context(), cfg)
 		if err != nil {
 			log.Println("Unable to connect to database:", err)
 			return err
