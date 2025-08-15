@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -19,12 +16,15 @@ var getCmd = &cobra.Command{
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		urlCode := args[0]
+		deps := getDeps(cmd.Context())
+		if deps == nil {
+			return fmt.Errorf("internal: deps not set")
+		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		originalUrl, err := cmdShortener.Get(ctx, urlCode)
+		originalUrl, err := deps.Shortener.Get(ctx, args[0])
 		if err != nil {
 			return fmt.Errorf("failed to retrieve original URL: %w", err)
 		}
