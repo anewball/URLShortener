@@ -1,6 +1,3 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -16,15 +13,19 @@ var deleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "Delete a URL from the shortener service by url code",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		deps := getDeps(cmd.Context())
+		if deps == nil {
+			return fmt.Errorf("internal: deps not set")
+		}
+
 		if len(args) < 1 {
 			return fmt.Errorf("url code is required")
 		}
 
-		urlCode := args[0]
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		if err := cmdShortener.Delete(ctx, urlCode); err != nil {
+		if err := deps.Shortener.Delete(ctx, args[0]); err != nil {
 			return fmt.Errorf("failed to delete URL: %w", err)
 		}
 
