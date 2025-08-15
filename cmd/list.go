@@ -1,12 +1,8 @@
-/*
-Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -14,31 +10,35 @@ import (
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List all URLs in the shortener service by offset and limit",
+	Use:     "list",
+	Short:   "List all URLs in the shortener service by offset and limit",
 	Aliases: []string{"l"},
-	Args: cobra.MinimumNArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error{
-		offset, err := strconv.Atoi(args[0])
-		if err != nil {
-			return fmt.Errorf("invalid offset: %w", err)
+	RunE: func(cmd *cobra.Command, args []string) error {
+		deps := getDeps(cmd.Context())
+		if deps == nil {
+			return fmt.Errorf("internal: deps not set")
 		}
 
-		limit, err := strconv.Atoi(args[1])
-		if err != nil {
-			return fmt.Errorf("invalid limit: %w", err)
+		limit, _ := cmd.Flags().GetInt("limit")
+		offset, _ := cmd.Flags().GetInt("offset")
+
+		if limit <= 0 || offset < 0 {
+			return fmt.Errorf("limit must be between 1 and 1000")
+		}
+		if offset < 0 {
+			return fmt.Errorf("offset cannot be negative")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		urls, err := cmdShortener.List(ctx, limit, offset)
+		urlItems, err := deps.Shortener.List(ctx, limit, offset)
 		if err != nil {
 			return fmt.Errorf("failed to list URLs: %w", err)
 		}
 
-		for _, url := range urls {
-			fmt.Printf("http://localhost:8080/%s\n", url)
+		for _, urlItem := range urlItems {
+			fmt.Printf("http://localhost:8080/%s\n", urlItem.ShortCode)
 		}
 
 		return nil
