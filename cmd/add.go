@@ -16,15 +16,10 @@ var addCmd = &cobra.Command{
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		deps := getDeps(cmd.Context())
-		if deps ==  nil {
-			return fmt.Errorf("internal: deps not set")
-		}
-
 		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
-		code, err := deps.Shortener.Add(ctx, args[0])
+		code, err := app.Short.Add(ctx, args[0])
 		if err != nil {
 			return fmt.Errorf("failed to add URL: %w", err)
 		}
