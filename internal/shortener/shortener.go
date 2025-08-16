@@ -23,7 +23,7 @@ type Shortener interface {
 	Add(ctx context.Context, url string) (string, error)
 	Get(ctx context.Context, shortCode string) (string, error)
 	List(ctx context.Context, limit, offset int) ([]URLItem, error)
-	Delete(ctx context.Context, shortCode string) error
+	Delete(ctx context.Context, shortCode string) (bool, error)
 }
 
 type shortener struct {
@@ -38,7 +38,7 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func NewShortener(db DatabaseConn) *shortener {
+func New(db DatabaseConn) *shortener {
 	return &shortener{
 		db: db,
 	}
@@ -48,7 +48,7 @@ const (
 	AddQuery    = "INSERT INTO url (original_url, short_code) VALUES ($1, $2) RETURNING id;"
 	GetQuery    = "SELECT original_url FROM url WHERE short_code = $1"
 	ListQuery   = "SELECT id, original_url, short_code, created_at, expires_at FROM url ORDER BY created_at DESC LIMIT $1 OFFSET $2"
-	DeleteQuery = "DELETE FROM url WHERE short_code = $1"
+	DeleteQuery = "DELETE FROM url WHERE short_code = $1 RETURNING id;"
 	empty       = ""
 )
 
@@ -57,7 +57,7 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	for range 3 {
+	for range 5 {
 		code, err := generateCode(7)
 		if err != nil {
 			return empty, err
@@ -68,14 +68,14 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 			return code, nil
 		}
 
-		var pqErr *pgconn.PgError
-		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			continue // Unique violation, try again
+		if isUniqueViolation(err) {
+			continue
 		}
-		return empty, fmt.Errorf("insert: %w", err)
+
+		return code, nil
 	}
 
-	return empty, fmt.Errorf("failed to generate unique code after multiple attempts")
+	return empty, errors.New("exhausted retries")
 }
 
 func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
@@ -122,30 +122,26 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	return urlItems, nil
 }
 
-func (s *shortener) Delete(ctx context.Context, shortCode string) error {
+func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
 	if shortCode == empty {
-		return fmt.Errorf("short URL cannot be empty")
+		return false, fmt.Errorf("short URL cannot be empty")
 	}
 
-	_, err := s.db.Exec(ctx, DeleteQuery, shortCode)
+	cmdTag, err := s.db.Exec(ctx, DeleteQuery, shortCode)
 	if err != nil {
-		if err == pgx.ErrNoRows {
-			return fmt.Errorf("short URL not found")
-		}
-
-		return fmt.Errorf("failed to delete URL: %w", err)
+		return false, err
 	}
 
-	return nil
+	return cmdTag.RowsAffected() > 0, nil
 }
 
-func isValidURL(input string) error {
-	if input == empty {
+func isValidURL(raw string) error {
+	if raw == empty {
 		return fmt.Errorf("URL cannot be empty")
 	}
-	s := strings.TrimSpace(input)
+	s := strings.TrimSpace(raw)
 	u, err := url.Parse(s)
-	if err != nil || u.Scheme == "" || u.Host == "" {
+	if err != nil || u.Scheme == empty || u.Host == empty {
 		return errors.New("URL must include scheme (http/https) and host")
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
@@ -164,4 +160,12 @@ func generateCode(n int) (string, error) {
 		b[i] = alphabet[int(b[i])%len(alphabet)]
 	}
 	return string(b), nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pqErr *pgconn.PgError
+	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+		return true
+	}
+	return false
 }
