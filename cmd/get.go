@@ -16,15 +16,10 @@ var getCmd = &cobra.Command{
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		deps := getDeps(cmd.Context())
-		if deps == nil {
-			return fmt.Errorf("internal: deps not set")
-		}
-
 		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
-		originalUrl, err := deps.Shortener.Get(ctx, args[0])
+		originalUrl, err := app.Short.Get(ctx, args[0])
 		if err != nil {
 			return fmt.Errorf("failed to retrieve original URL: %w", err)
 		}
