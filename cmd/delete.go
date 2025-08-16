@@ -10,14 +10,9 @@ import (
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Delete a URL from the shortener service by url code",
+	Use:   "delete <code>",
+	Short: "Delete a URL from the shortener service by short code",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		deps := getDeps(cmd.Context())
-		if deps == nil {
-			return fmt.Errorf("internal: deps not set")
-		}
-
 		if len(args) < 1 {
 			return fmt.Errorf("url code is required")
 		}
@@ -25,8 +20,13 @@ var deleteCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
-		if err := deps.Shortener.Delete(ctx, args[0]); err != nil {
+		code := args[0]
+		deleted, err := app.Short.Delete(ctx, code)
+		if err != nil {
 			return fmt.Errorf("failed to delete URL: %w", err)
+		}
+		if !deleted{
+			return fmt.Errorf("no URL found for code %q", code)
 		}
 
 		fmt.Println("URL deleted successfully")
