@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -14,46 +15,45 @@ import (
 
 var cfgFile string
 
+type App struct {
+	Pool  *pgxpool.Pool
+	Short shortener.Shortener
+}
+
+var app *App
+
 var rootCmd = &cobra.Command{
 	Use:     "urlshortener",
 	Short:   "A simple URL shortener service",
 	Long:    `A simple URL shortener service that allows you to shorten URLs and retrieve the original URLs using short codes.`,
 	Version: "0.1.0",
 	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-		initLoadEnv()
+		// Load environment variables from .env file if needed
+		// This can be done using a package like godotenv
+		_ = godotenv.Load(".env")
+
 		dsn := os.Getenv("DATABASE_URL")
 		if dsn == "" {
 			return fmt.Errorf("DATABASE_URL environment variable is not set")
 		}
 
-		cfg, err := pgxpool.ParseConfig(dsn)
+		p, err := newPool(cmd.Context(), dsn)
 		if err != nil {
-			log.Println("Unable to parse database connection string:", err)
 			return err
 		}
 
-		cfg.MaxConns = 4                       // Set maximum number of connections to 4
-		cfg.MinConns = 1                       // Set minimum number of connections to 1
-		cfg.MaxConnLifetime = 30 * time.Minute // Set maximum connection lifetime to 30 minutes
-		cfg.MaxConnIdleTime = 5 * time.Minute  // Set maximum idle time for connections to 5 minutes
-
-		pool, err := pgxpool.NewWithConfig(cmd.Context(), cfg)
-		if err != nil {
-			log.Println("Unable to connect to database:", err)
-			return err
-		}
-
-		deps := &Deps{Pool: pool, Shortener: shortener.NewShortener(pool)}
-		cmd.SetContext(withDeps(cmd.Context(), deps))
+		app = &App{Pool: p, Short: shortener.New(p)}
 
 		log.Println("Connected to database successfully")
 		return nil
 	},
-	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if d := getDeps(cmd.Context()); d != nil && d.Pool != nil {
-			d.Pool.Close()
+	PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		if app.Pool != nil {
+			app.Pool.Close()
+			app.Pool = nil
 			log.Println("Database connection pool closed")
 		}
+		return nil
 	},
 }
 
@@ -72,8 +72,16 @@ func init() {
 	listCmd.Flags().IntP("offset", "o", 0, "results to skip")
 }
 
-func initLoadEnv() {
-	// Load environment variables from .env file if needed
-	// This can be done using a package like godotenv
-	_ = godotenv.Load(".env")
+func newPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(dbURL)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.MaxConns = 4                       // Set maximum number of connections to 4
+	cfg.MinConns = 1                       // Set minimum number of connections to 1
+	cfg.MaxConnLifetime = 30 * time.Minute // Set maximum connection lifetime to 30 minutes
+	cfg.MaxConnIdleTime = 5 * time.Minute  // Set maximum idle time for connections to 5 minutes
+
+	return pgxpool.NewWithConfig(ctx, cfg)
 }
