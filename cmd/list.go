@@ -14,11 +14,6 @@ var listCmd = &cobra.Command{
 	Short:   "List all URLs in the shortener service by offset and limit",
 	Aliases: []string{"l"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		deps := getDeps(cmd.Context())
-		if deps == nil {
-			return fmt.Errorf("internal: deps not set")
-		}
-
 		limit, _ := cmd.Flags().GetInt("limit")
 		offset, _ := cmd.Flags().GetInt("offset")
 
@@ -32,7 +27,7 @@ var listCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 		defer cancel()
 
-		urlItems, err := deps.Shortener.List(ctx, limit, offset)
+		urlItems, err := app.Short.List(ctx, limit, offset)
 		if err != nil {
 			return fmt.Errorf("failed to list URLs: %w", err)
 		}
