@@ -10,7 +10,7 @@ import (
 
 // getCmd represents the get command
 var getCmd = &cobra.Command{
-	Use:          "get [url_code]",
+	Use:          "get <code>",
 	Short:        "Retrieve a URL from the shortener service",
 	Aliases:      []string{"g"},
 	Args:         cobra.MinimumNArgs(1),
