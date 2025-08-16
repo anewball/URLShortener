@@ -10,7 +10,7 @@ import (
 
 // addCmd represents the add command
 var addCmd = &cobra.Command{
-	Use:          "add [url]",
+	Use:          "add <url>",
 	Short:        "Save a URL to the shortener service",
 	Aliases:      []string{"a"},
 	Args:         cobra.MinimumNArgs(1),
