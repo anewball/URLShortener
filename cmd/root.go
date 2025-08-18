@@ -44,13 +44,12 @@ func NewRoot(a *App) *cobra.Command {
 			log.Println("Connected to database successfully")
 			return nil
 		},
-		PersistentPostRunE: func(cmd *cobra.Command, args []string) error {
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			if a.Pool != nil {
 				a.Pool.Close()
 				a.Pool = nil
 				log.Println("Database connection pool closed")
 			}
-			return nil
 		},
 	}
 
