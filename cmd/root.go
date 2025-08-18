@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -14,6 +16,14 @@ import (
 
 type App struct {
 	Pool *pgxpool.Pool
+}
+
+func (a *App) Close() {
+	if a.Pool != nil {
+		a.Pool.Close()
+		a.Pool = nil
+		log.Println("Database connection pool closed")
+	}
 }
 
 func NewRoot(a *App) *cobra.Command {
@@ -51,13 +61,6 @@ func NewRoot(a *App) *cobra.Command {
 			log.Println("Connected to database successfully")
 			return nil
 		},
-		PersistentPostRun: func(cmd *cobra.Command, args []string) {
-			if a.Pool != nil {
-				a.Pool.Close()
-				a.Pool = nil
-				log.Println("Database connection pool closed")
-			}
-		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
@@ -81,4 +84,21 @@ func newPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	cfg.HealthCheckPeriod = 30 * time.Second
 
 	return pgxpool.NewWithConfig(ctx, cfg)
+}
+
+func Run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	app := &App{}
+	defer app.Close()
+
+	root := NewRoot(app)
+	root.SetContext(ctx)
+
+	if err := root.Execute(); err != nil {
+		return err
+	}
+
+	return nil
 }
