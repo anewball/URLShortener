@@ -5,40 +5,28 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-// addCmd represents the add command
-var addCmd = &cobra.Command{
-	Use:          "add <url>",
-	Short:        "Save a URL to the shortener service",
-	Aliases:      []string{"a"},
-	Args:         cobra.MinimumNArgs(1),
-	SilenceUsage: true,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
-		defer cancel()
+func NewAdd(a *App) *cobra.Command {
+	return &cobra.Command{
+		Use:          "add <url>",
+		Short:        "Save a URL to the shortener service",
+		Args:         cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
+			defer cancel()
 
-		code, err := app.Short.Add(ctx, args[0])
-		if err != nil {
-			return fmt.Errorf("failed to add URL: %w", err)
-		}
-		fmt.Printf("Shortened URL: %s/%s\n", "http://localhost:8080", code)
+			s := shortener.New(a.Pool)
 
-		return nil
-	},
-}
+			code, err := s.Add(ctx, args[0])
+			if err != nil {
+				return fmt.Errorf("failed to add URL: %w", err)
+			}
+			fmt.Printf("Shortened URL: %s/%s\n", "http://localhost:8080", code)
 
-func init() {
-	rootCmd.AddCommand(addCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// addCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+			return nil
+		},
+	}
 }
