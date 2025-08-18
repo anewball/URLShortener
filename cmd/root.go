@@ -20,10 +20,11 @@ func NewRoot(a *App) *cobra.Command {
 	var cfgFile string
 
 	rootCmd := &cobra.Command{
-		Use:     "urlshortener",
-		Short:   "A simple URL shortener service",
-		Long:    `A simple URL shortener service that allows you to shorten URLs and retrieve the original URLs using short codes.`,
-		Version: "0.1.0",
+		Use:          "urlshortener",
+		Short:        "A simple URL shortener service",
+		Long:         `A simple URL shortener service that allows you to shorten URLs and retrieve the original URLs using short codes.`,
+		SilenceUsage: true,
+		Version:      "0.1.0",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// Load environment variables from .env file if needed
 			// This can be done using a package like godotenv
