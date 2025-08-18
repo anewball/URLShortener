@@ -27,7 +27,7 @@ func NewRoot(a *App) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			// Load environment variables from .env file if needed
 			// This can be done using a package like godotenv
-			_ = godotenv.Load(".env")
+			_ = godotenv.Load()
 
 			dsn := os.Getenv("DATABASE_URL")
 			if dsn == "" {
