@@ -27,6 +27,11 @@ func NewRoot(a *App) *cobra.Command {
 		SilenceErrors: true,
 		Version:       "0.1.0",
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			log.SetOutput(os.Stderr)
+			if a.Pool != nil {
+				return nil
+			}
+
 			// Load environment variables from .env file if needed
 			// This can be done using a package like godotenv
 			_ = godotenv.Load()
