@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -13,7 +14,6 @@ func NewList(a *App) *cobra.Command {
 	c := &cobra.Command{
 		Use:     "list",
 		Short:   "List all URLs in the shortener service by offset and limit",
-		Aliases: []string{"l"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
@@ -35,11 +35,14 @@ func NewList(a *App) *cobra.Command {
 				return fmt.Errorf("failed to list URLs: %w", err)
 			}
 
-			for _, urlItem := range urlItems {
-				fmt.Printf("http://localhost:8080/%s\n", urlItem.ShortCode)
+			var results []Result
+			for _, u := range urlItems {
+				results = append(results, Result{Code: u.ShortCode, Url: u.OriginalURL})
 			}
 
-			return nil
+			encoder := json.NewEncoder(cmd.OutOrStdout())
+
+			return encoder.Encode(results)
 		},
 	}
 

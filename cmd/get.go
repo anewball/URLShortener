@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -25,9 +26,10 @@ func NewGet(a *App) *cobra.Command {
 				return fmt.Errorf("failed to retrieve original URL: %w", err)
 			}
 
-			cmd.Println(url)
-
-			return nil
+			result := Result{Code: args[0], Url: url}
+			encoder := json.NewEncoder(cmd.OutOrStdout())
+			
+			return encoder.Encode(result)
 		},
 	}
 	return c

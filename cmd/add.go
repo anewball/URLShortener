@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 
 func NewAdd(a *App) *cobra.Command {
 	return &cobra.Command{
-		Use:          "add <url>",
-		Short:        "Save a URL to the shortener service",
-		Args:         cobra.MinimumNArgs(1),
+		Use:   "add <url>",
+		Short: "Save a URL to the shortener service",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 			defer cancel()
@@ -24,9 +25,12 @@ func NewAdd(a *App) *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to add URL: %w", err)
 			}
-			fmt.Printf("Shortened URL: %s/%s\n", "http://localhost:8080", code)
 
-			return nil
+			result := Result{Code: code, Url: args[0]}
+
+			encoder := json.NewEncoder(cmd.OutOrStdout())
+
+			return encoder.Encode(result)
 		},
 	}
 }

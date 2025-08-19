@@ -26,6 +26,11 @@ func (a *App) Close() {
 	}
 }
 
+type Result struct {
+	Code string `json:"code"`
+	Url  string `json:"url"`
+}
+
 func NewRoot(a *App) *cobra.Command {
 	var cfgFile string
 
