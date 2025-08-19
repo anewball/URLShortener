@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -32,8 +33,17 @@ func NewDelete(a *App) *cobra.Command {
 				return fmt.Errorf("no URL found for code %q", code)
 			}
 
-			fmt.Println("URL deleted successfully")
-			return nil
+			var result struct {
+				Deleted bool   `json:"deleted"`
+				Code    string `json:"code"`
+			}
+
+			result.Deleted = deleted
+			result.Code = code
+
+			encoder := json.NewEncoder(cmd.OutOrStdout())
+
+			return encoder.Encode(result)
 		},
 	}
 }
