@@ -43,6 +43,18 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
+			name:    "error 23505",
+			url:     "http://example.com",
+			isError: true,
+			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+				return pgconn.CommandTag{}, &pgconn.PgError{
+					Code: "23505",
+					Message: "duplicate key value violates unique constraint",
+					Detail: "Key (short_code)=(abc123) already exists.",
+				}
+			},
+		},
+		{
 			name:    "No URL scheme",
 			url:     "example.com",
 			isError: true,
@@ -64,7 +76,7 @@ func TestAdd(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDatabaseConn{ExecFunc: tc.execFunc}
 
-			s := NewShortener(m)
+			s := New(m)
 			shortCode, err := s.Add(context.Background(), tc.url)
 
 			if tc.isError {
@@ -125,7 +137,7 @@ func TestGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDatabaseConn{QueryRowFunc: tc.queryRowFunc}
 
-			s := NewShortener(m)
+			s := New(m)
 			url, err := s.Get(context.Background(), tc.shortCode)
 
 			if tc.isError {
@@ -220,7 +232,7 @@ func TestList(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDatabaseConn{QueryFunc: tc.queryFunc}
 
-			s := NewShortener(m)
+			s := New(m)
 			urls, err := s.List(context.Background(), tc.limit, tc.offset)
 
 			if tc.isError {
@@ -279,8 +291,8 @@ func TestDelete(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDatabaseConn{ExecFunc: tc.execFunc}
 
-			s := NewShortener(m)
-			err := s.Delete(context.Background(), tc.shortCode)
+			s := New(m)
+			_, err := s.Delete(context.Background(), tc.shortCode)
 
 			if tc.isError {
 				require.Error(t, err)
