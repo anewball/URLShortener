@@ -3,6 +3,8 @@ package shortener
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -37,7 +39,7 @@ func (m *mockDatabaseConn) Query(ctx context.Context, sql string, args ...any) (
 
 // mockRow is a mock implementation of pgx.Row.
 type mockRow struct {
-	result string
+	result []any
 	err    error
 }
 
@@ -45,16 +47,48 @@ func (m *mockRow) Scan(dest ...any) error {
 	if m.err != nil {
 		return m.err
 	}
-	if len(dest) < 1 {
-		return errors.New("Scan destination is empty")
+	if len(dest) != len(m.result) {
+		return fmt.Errorf("scan: destination count %d != column count %d", len(dest), len(m.result))
 	}
 
-	// Copy the `result` into the provided destination.
-	switch d := dest[0].(type) {
-	case *string:
-		*d = m.result
-	default:
-		return errors.New("unsupported type for Scan result")
+	for i := range dest {
+		v := m.result[i]
+		switch d := dest[i].(type) {
+		case *string:
+			if s, ok := v.(string); ok {
+				*d = s
+			} else {
+				return fmt.Errorf("scan: cannot assign %T to *string", v)
+			}
+		case *uint64:
+			switch x := v.(type) {
+			case uint64:
+				*d = x
+			case int64:
+				*d = uint64(x)
+			case int:
+				*d = uint64(x)
+			default:
+				return fmt.Errorf("scan: cannot assign %T to *uint64", v)
+			}
+		case *time.Time:
+			if tt, ok := v.(time.Time); ok {
+				*d = tt
+			} else {
+				return fmt.Errorf("scan: cannot assign %T to *time.Time", v)
+			}
+		case **time.Time: // nullable
+			switch x := v.(type) {
+			case *time.Time:
+				*d = x
+			case nil:
+				*d = nil
+			default:
+				return fmt.Errorf("scan: cannot assign %T to **time.Time", v)
+			}
+		default:
+			return fmt.Errorf("scan: unsupported destination type %T", d)
+		}
 	}
 	return nil
 }
@@ -111,20 +145,53 @@ func (m *mockRows) Scan(dest ...any) error {
 	if m.index-1 >= len(m.data) {
 		return errors.New("no row data available")
 	}
-
+	// Allow targeted injection of a scan error for testing.
 	if m.scanErrPos > 0 && m.index-1 == m.scanErrPos {
 		return errors.New("simulated scan error")
 	}
 
 	row := m.data[m.index-1]
-	for i, v := range row {
+	if len(dest) > len(row) {
+		return fmt.Errorf("scan: destination count %d exceeds available columns %d", len(dest), len(row))
+	}
+
+	for i := range dest {
+		v := row[i]
 		switch d := dest[i].(type) {
 		case *string:
-			*d = v.(string)
-		case *int:
-			*d = v.(int)
+			if s, ok := v.(string); ok {
+				*d = s
+			} else {
+				return fmt.Errorf("scan: cannot assign %T to *string", v)
+			}
+		case *uint64:
+			switch x := v.(type) {
+			case uint64:
+				*d = x
+			case int64:
+				*d = uint64(x)
+			case int:
+				*d = uint64(x)
+			default:
+				return fmt.Errorf("scan: cannot assign %T to *uint64", v)
+			}
+		case *time.Time:
+			if tt, ok := v.(time.Time); ok {
+				*d = tt
+			} else {
+				return fmt.Errorf("scan: cannot assign %T to *time.Time", v)
+			}
+		case **time.Time: // nullable
+			switch x := v.(type) {
+			case *time.Time:
+				*d = x
+			case nil:
+				*d = nil
+			default:
+				return fmt.Errorf("scan: cannot assign %T to **time.Time", v)
+			}
 		default:
-			return errors.New("unsupported destination type")
+			return fmt.Errorf("scan: unsupported destination type %T", d)
 		}
 	}
 	return nil
