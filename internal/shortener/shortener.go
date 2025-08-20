@@ -150,14 +150,26 @@ func isValidURL(raw string) error {
 }
 
 func generateCode(n int) string {
-	alphabet := []byte("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789")
-	b := make([]byte, n)
-	rand.Read(b)
+	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+	k := len(alphabet) // work in int
+	out := make([]byte, n)
+	var buf [1]byte
 
 	for i := range n {
-		b[i] = alphabet[int(b[i])%len(alphabet)]
+		for {
+			if _, err := rand.Read(buf[:]); err != nil {
+				panic("crypto/rand failed: " + err.Error())
+			}
+			x := int(buf[0])             // 0..255
+			threshold := 256 - (256 % k) // in int, 0..256
+			if x < threshold {           // accept only values < threshold
+				out[i] = alphabet[x%k]
+				break
+			}
+			// otherwise, draw again (rejection sampling)
+		}
 	}
-	return string(b)
+	return string(out)
 }
 
 func isUniqueViolation(err error) bool {
