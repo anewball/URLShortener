@@ -45,7 +45,7 @@ func New(db DatabaseConn) *shortener {
 }
 
 const (
-	AddQuery    = "INSERT INTO url (original_url, short_code) VALUES ($1, $2) RETURNING id;"
+	AddQuery    = "INSERT INTO url (original_url, short_code) VALUES ($1, $2);"
 	GetQuery    = "SELECT original_url FROM url WHERE short_code = $1"
 	ListQuery   = "SELECT id, original_url, short_code, created_at, expires_at FROM url ORDER BY created_at DESC LIMIT $1 OFFSET $2"
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1 RETURNING id;"
@@ -58,12 +58,9 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 	}
 
 	for range 5 {
-		code, err := generateCode(7)
-		if err != nil {
-			return empty, err
-		}
+		code := generateCode(7)
 
-		_, err = s.db.Exec(ctx, AddQuery, url, code)
+		_, err := s.db.Exec(ctx, AddQuery, url, code)
 		if err == nil {
 			return code, nil
 		}
@@ -72,7 +69,7 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 			continue
 		}
 
-		return code, nil
+		return empty, err
 	}
 
 	return empty, errors.New("exhausted retries")
@@ -150,16 +147,15 @@ func isValidURL(raw string) error {
 	return nil
 }
 
-func generateCode(n int) (string, error) {
+func generateCode(n int) string {
 	alphabet := []byte("ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789")
 	b := make([]byte, n)
-	if _, err := rand.Read(b); err != nil {
-		return empty, fmt.Errorf("random read: %w", err)
-	}
+	rand.Read(b)
+
 	for i := range n {
 		b[i] = alphabet[int(b[i])%len(alphabet)]
 	}
-	return string(b), nil
+	return string(b)
 }
 
 func isUniqueViolation(err error) bool {
