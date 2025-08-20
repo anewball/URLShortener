@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -48,9 +49,9 @@ func TestAdd(t *testing.T) {
 			isError: true,
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, &pgconn.PgError{
-					Code: "23505",
+					Code:    "23505",
 					Message: "duplicate key value violates unique constraint",
-					Detail: "Key (short_code)=(abc123) already exists.",
+					Detail:  "Key (short_code)=(abc123) already exists.",
 				}
 			},
 		},
@@ -60,6 +61,14 @@ func TestAdd(t *testing.T) {
 			isError: true,
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, errors.New("No URL scheme")
+			},
+		},
+				{
+			name:    "Invalid Scheme",
+			url:     "ppp://example.com",
+			isError: true,
+			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+				return pgconn.CommandTag{}, errors.New("Invalid URL scheme")
 			},
 		},
 		{
@@ -104,7 +113,7 @@ func TestGet(t *testing.T) {
 			isError:   false,
 			url:       "http://example.com",
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
-				return &mockRow{result: "http://example.com"}
+				return &mockRow{result: []any{"http://example.com"}}
 			},
 		},
 		{
@@ -153,24 +162,27 @@ func TestGet(t *testing.T) {
 
 func TestList(t *testing.T) {
 	testCases := []struct {
-		name      string
-		limit     int
-		offset    int
-		isError   bool
-		urls      []string
-		queryFunc func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+		name         string
+		limit        int
+		offset       int
+		isError      bool
+		expectedData []URLItem
+		queryFunc    func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	}{
 		{
 			name:    "success",
 			limit:   10,
 			offset:  0,
 			isError: false,
-			urls:    []string{"http://example.com/1", "http://example.com/2"},
+			expectedData: []URLItem{
+				{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
+				{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
+			},
 			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 				return &mockRows{
 					data: [][]any{
-						{"http://example.com/1"},
-						{"http://example.com/2"},
+						{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
+						{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
 					},
 					index: 0,
 				}, nil
@@ -233,14 +245,14 @@ func TestList(t *testing.T) {
 			m := &mockDatabaseConn{QueryFunc: tc.queryFunc}
 
 			s := New(m)
-			urls, err := s.List(context.Background(), tc.limit, tc.offset)
+			actualData, err := s.List(context.Background(), tc.limit, tc.offset)
 
 			if tc.isError {
 				require.Error(t, err)
-				require.Empty(t, urls)
+				require.Empty(t, actualData)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tc.urls, urls)
+				require.Equal(t, tc.expectedData, actualData)
 			}
 		})
 	}
