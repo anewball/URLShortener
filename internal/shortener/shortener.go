@@ -50,6 +50,8 @@ const (
 	ListQuery   = "SELECT id, original_url, short_code, created_at, expires_at FROM url ORDER BY created_at DESC LIMIT $1 OFFSET $2"
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1;"
 	empty       = ""
+	codeLen     = 7
+	maxRetries  = 5
 )
 
 func (s *shortener) Add(ctx context.Context, url string) (string, error) {
@@ -57,8 +59,8 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	for range 5 {
-		code := generateCode(7)
+	for range maxRetries {
+		code := generateCode(codeLen)
 
 		_, err := s.db.Exec(ctx, AddQuery, url, code)
 		if err == nil {
