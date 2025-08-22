@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/anewball/urlshortener/internal/shortener"
@@ -19,18 +20,23 @@ func NewAdd(a *App) *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 			defer cancel()
 
-			s := shortener.New(a.Pool)
-
-			code, err := s.Add(ctx, args[0])
-			if err != nil {
-				return fmt.Errorf("failed to add URL: %w", err)
-			}
-
-			result := Result{Code: code, Url: args[0]}
-
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-
-			return encoder.Encode(result)
+			return addAction(ctx, cmd.OutOrStdout(), a, args)
 		},
 	}
+}
+
+func addAction(ctx context.Context, out io.Writer, a *App, args []string) error {
+	s := shortener.New(a.Pool)
+
+	arg := args[0]
+	code, err := s.Add(ctx, arg)
+	if err != nil {
+		return fmt.Errorf("failed to add URL: %w", err)
+	}
+
+	result := Result{Code: code, Url: arg}
+
+	encoder := json.NewEncoder(out)
+
+	return encoder.Encode(result)
 }
