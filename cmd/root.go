@@ -9,21 +9,18 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
 type App struct {
-	Pool *pgxpool.Pool
+	S shortener.Shortener
 }
 
-func (a *App) Close() {
-	if a.Pool != nil {
-		a.Pool.Close()
-		a.Pool = nil
-		log.Println("Database connection pool closed")
-	}
+func NewApp(dbConn shortener.DatabaseConn) *App {
+	return &App{S: shortener.New(dbConn)}
 }
 
 type Result struct {
@@ -41,31 +38,6 @@ func NewRoot(a *App) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       "0.1.0",
-		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			log.SetOutput(os.Stderr)
-			if a.Pool != nil {
-				return nil
-			}
-
-			// Load environment variables from .env file if needed
-			// This can be done using a package like godotenv
-			_ = godotenv.Load()
-
-			dsn := os.Getenv("DATABASE_URL")
-			if dsn == "" {
-				return fmt.Errorf("DATABASE_URL environment variable is not set")
-			}
-
-			p, err := newPool(cmd.Context(), dsn)
-			if err != nil {
-				return err
-			}
-
-			a.Pool = p
-
-			log.Println("Connected to database successfully")
-			return nil
-		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
@@ -92,11 +64,28 @@ func newPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 }
 
 func Run() error {
+	log.SetOutput(os.Stderr)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	app := &App{}
-	defer app.Close()
+	// Load environment variables from .env file if needed
+	// This can be done using a package like godotenv
+	_ = godotenv.Load()
+
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		return fmt.Errorf("DATABASE_URL environment variable is not set")
+	}
+
+	p, err := newPool(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	log.Println("Connected to database successfully")
+
+	app := NewApp(p)
+	defer app.S.Close()
 
 	root := NewRoot(app)
 	root.SetContext(ctx)

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
@@ -23,9 +22,7 @@ func NewDelete(a *App) *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 			defer cancel()
 
-			s := shortener.New(a.Pool)
-
-			deleted, err := s.Delete(ctx, code)
+			deleted, err := a.S.Delete(ctx, code)
 			if err != nil {
 				return fmt.Errorf("failed to delete URL: %w", err)
 			}

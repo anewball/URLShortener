@@ -7,7 +7,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
@@ -26,10 +25,8 @@ func NewAdd(a *App) *cobra.Command {
 }
 
 func addAction(ctx context.Context, out io.Writer, a *App, args []string) error {
-	s := shortener.New(a.Pool)
-
 	arg := args[0]
-	code, err := s.Add(ctx, arg)
+	code, err := a.S.Add(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("failed to add URL: %w", err)
 	}

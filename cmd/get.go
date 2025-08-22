@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
@@ -19,16 +18,14 @@ func NewGet(a *App) *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 			defer cancel()
 
-			s := shortener.New(a.Pool)
-
-			url, err := s.Get(ctx, args[0])
+			url, err := a.S.Get(ctx, args[0])
 			if err != nil {
 				return fmt.Errorf("failed to retrieve original URL: %w", err)
 			}
 
 			result := Result{Code: args[0], Url: url}
 			encoder := json.NewEncoder(cmd.OutOrStdout())
-			
+
 			return encoder.Encode(result)
 		},
 	}

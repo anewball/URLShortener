@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
 func NewList(a *App) *cobra.Command {
 	c := &cobra.Command{
-		Use:     "list",
-		Short:   "List all URLs in the shortener service by offset and limit",
+		Use:   "list",
+		Short: "List all URLs in the shortener service by offset and limit",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
@@ -28,9 +27,7 @@ func NewList(a *App) *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
 			defer cancel()
 
-			s := shortener.New(a.Pool)
-
-			urlItems, err := s.List(ctx, limit, offset)
+			urlItems, err := a.S.List(ctx, limit, offset)
 			if err != nil {
 				return fmt.Errorf("failed to list URLs: %w", err)
 			}

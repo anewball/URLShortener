@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"log"
 	"net/url"
 	"strings"
 	"time"
@@ -17,6 +18,7 @@ type DatabaseConn interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	Close()
 }
 
 type Shortener interface {
@@ -24,6 +26,7 @@ type Shortener interface {
 	Get(ctx context.Context, shortCode string) (string, error)
 	List(ctx context.Context, limit, offset int) ([]URLItem, error)
 	Delete(ctx context.Context, shortCode string) (bool, error)
+	Close()
 }
 
 type shortener struct {
@@ -132,6 +135,11 @@ func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) 
 	}
 
 	return cmdTag.RowsAffected() > 0, nil
+}
+
+func (s *shortener) Close() {
+	s.db.Close()
+	log.Println("Database connection pool closed")
 }
 
 func isValidURL(raw string) error {
