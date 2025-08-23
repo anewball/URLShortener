@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -25,6 +26,10 @@ func NewAdd(a *App) *cobra.Command {
 }
 
 func addAction(ctx context.Context, out io.Writer, a *App, args []string) error {
+	if len(args) == 0{
+		return errors.New("requires at least 1 arg(s), only received 0")
+	}
+	
 	arg := args[0]
 	code, err := a.S.Add(ctx, arg)
 	if err != nil {
