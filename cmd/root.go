@@ -85,7 +85,6 @@ func Run() error {
 	log.Println("Connected to database successfully")
 
 	app := NewApp(p)
-	defer app.S.Close()
 
 	root := NewRoot(app)
 	root.SetContext(ctx)
@@ -93,6 +92,9 @@ func Run() error {
 	if err := root.Execute(); err != nil {
 		return err
 	}
+
+	defer p.Close()
+	log.Println("Database connection pool closed")
 
 	return nil
 }
