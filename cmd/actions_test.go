@@ -3,8 +3,10 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,8 +18,9 @@ func TestActions(t *testing.T) {
 	testCases := []struct {
 		name           string
 		args           []string
-		out            io.Writer
+		buf            bytes.Buffer
 		isError        bool
+		expectedResult Result
 		actionFunction func(context.Context, io.Writer, *App, []string) error
 		shor           shortener.Shortener
 	}{
@@ -25,7 +28,8 @@ func TestActions(t *testing.T) {
 			name:           "success",
 			args:           []string{"https://example.com"},
 			actionFunction: addAction,
-			out:            &bytes.Buffer{},
+			buf:            bytes.Buffer{},
+			expectedResult: Result{Code: "Hpa3t2B", Url: "https://example.com"},
 			isError:        false,
 			shor: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
@@ -37,7 +41,7 @@ func TestActions(t *testing.T) {
 			name:           "error produced",
 			args:           []string{"https://example.com"},
 			actionFunction: addAction,
-			out:            &bytes.Buffer{},
+			buf:            bytes.Buffer{},
 			isError:        true,
 			shor: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
@@ -54,13 +58,24 @@ func TestActions(t *testing.T) {
 
 			app := &App{S: tc.shor}
 
-			err := tc.actionFunction(ctx, tc.out, app, tc.args)
+			err := tc.actionFunction(ctx, &tc.buf, app, tc.args)
 
-			if !tc.isError {
-				assert.Nil(t, err)
-			} else {
-				assert.NotNil(t, err)
+			if tc.isError {
+				assert.Error(t, err)
+				return
 			}
+
+			assert.NoError(t, err)
+			got := tc.buf.String()
+			assert.NotEmpty(t, got)
+
+			var actualResult Result
+			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expectedResult, actualResult)
+
+			assert.True(t, strings.HasSuffix(got, "\n"))
 		})
 	}
 }
