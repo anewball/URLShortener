@@ -49,6 +49,18 @@ func TestActions(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:           "error empty args",
+			args:           []string{},
+			actionFunction: addAction,
+			buf:            bytes.Buffer{},
+			isError:        true,
+			shor: &mockedShortener{
+				addFunc: func(ctx context.Context, url string) (string, error) {
+					return "", errors.New("requires at least 1 arg(s), only received 0")
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
