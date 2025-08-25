@@ -17,19 +17,19 @@ func NewAdd(a *App) *cobra.Command {
 		Short: "Save a URL to the shortener service",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
-			defer cancel()
-
-			return addAction(ctx, cmd.OutOrStdout(), a, args)
+			return addAction(cmd.Context(), cmd.OutOrStdout(), a, args)
 		},
 	}
 }
 
 func addAction(ctx context.Context, out io.Writer, a *App, args []string) error {
-	if len(args) == 0{
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if len(args) == 0 {
 		return errors.New("requires at least 1 arg(s), only received 0")
 	}
-	
+
 	arg := args[0]
 	code, err := a.S.Add(ctx, arg)
 	if err != nil {
