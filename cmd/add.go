@@ -13,18 +13,18 @@ import (
 
 var addActionFunc = addAction // Indirection for testing
 
-func NewAdd(a *App) *cobra.Command {
+func NewAdd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "add <url>",
 		Short: "Save a URL to the shortener service",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return addActionFunc(cmd.Context(), cmd.OutOrStdout(), a, args)
+			return addActionFunc(cmd.Context(), cmd.OutOrStdout(), app, args)
 		},
 	}
 }
 
-func addAction(ctx context.Context, out io.Writer, a *App, args []string) error {
+func addAction(ctx context.Context, out io.Writer, app *App, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -33,7 +33,7 @@ func addAction(ctx context.Context, out io.Writer, a *App, args []string) error 
 	}
 
 	arg := args[0]
-	code, err := a.S.Add(ctx, arg)
+	code, err := app.S.Add(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("failed to add URL: %w", err)
 	}
