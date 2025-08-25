@@ -4,43 +4,51 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
-func NewDelete(a *App) *cobra.Command {
+var deleteActionFunc = deleteAction
+
+func NewDelete(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <code>",
 		Short: "Delete a URL from the shortener service by short code",
+		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if len(args) < 1 {
-				return fmt.Errorf("url code is required")
-			}
-			code := args[0]
-
-			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
-			defer cancel()
-
-			deleted, err := a.S.Delete(ctx, code)
-			if err != nil {
-				return fmt.Errorf("failed to delete URL: %w", err)
-			}
-			if !deleted {
-				return fmt.Errorf("no URL found for code %q", code)
-			}
-
-			var result struct {
-				Deleted bool   `json:"deleted"`
-				Code    string `json:"code"`
-			}
-
-			result.Deleted = deleted
-			result.Code = code
-
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-
-			return encoder.Encode(result)
+			return deleteActionFunc(cmd.Context(), cmd.OutOrStdout(), app, args)
 		},
 	}
+}
+
+func deleteAction(ctx context.Context, out io.Writer, app *App, args []string) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if len(args) == 0 {
+		return fmt.Errorf("requires at least 1 arg(s), only received 0")
+	}
+	code := args[0]
+
+	deleted, err := app.S.Delete(ctx, code)
+	if err != nil {
+		return fmt.Errorf("failed to delete URL: %w", err)
+	}
+	if !deleted {
+		return fmt.Errorf("no URL found for code %q", code)
+	}
+
+	var result struct {
+		Deleted bool   `json:"deleted"`
+		Code    string `json:"code"`
+	}
+
+	result.Deleted = deleted
+	result.Code = code
+
+	encoder := json.NewEncoder(out)
+
+	return encoder.Encode(result)
 }
