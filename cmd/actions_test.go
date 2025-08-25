@@ -12,6 +12,7 @@ import (
 
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestActions(t *testing.T) {
@@ -90,4 +91,41 @@ func TestActions(t *testing.T) {
 			assert.True(t, strings.HasSuffix(got, "\n"))
 		})
 	}
+}
+
+func TestNewAdd(t *testing.T) {
+	t.Cleanup(func() { addActionFunc = addAction })
+
+	called := false
+	var gotCtx context.Context
+	var gotOut io.Writer
+	var gotArgs []string
+
+	addActionFunc = func(ctx context.Context, out io.Writer, a *App, args []string) error {
+		called = true
+		gotCtx = ctx
+		gotOut = out
+		gotArgs = append([]string(nil), args...)
+		return nil
+	}
+
+	app := &App{S: &mockedShortener{}}
+	cmd := NewAdd(app)
+
+	assert.Equal(t, "add <url>", cmd.Use)
+	assert.NotNil(t, cmd.RunE)
+
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"https://example.com"})
+
+	// Execute the command exactly like a user would
+	require.NoError(t, cmd.ExecuteContext(context.Background()))
+
+	// Assertions on wiring
+	assert.True(t, called, "addActionFn should be invoked")
+	assert.Equal(t, []string{"https://example.com"}, gotArgs)
+	assert.Same(t, buf, gotOut)
+	assert.NotNil(t, gotCtx)
 }
