@@ -48,7 +48,11 @@ func NewRoot(a *App) *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
 	rootCmd.PersistentFlags().String("author", "Andy Newball", "author of the URL shortener")
 
-	rootCmd.AddCommand(NewAdd(a), NewDelete(a), NewGet(a), NewList(a))
+	listCmd := NewList(a)
+	listCmd.Flags().IntP("limit", "n", 50, "max results to return")
+	listCmd.Flags().IntP("offset", "o", 0, "results to skip")
+
+	rootCmd.AddCommand(NewAdd(a), NewDelete(a), NewGet(a), listCmd)
 
 	return rootCmd
 }
