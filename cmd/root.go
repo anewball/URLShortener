@@ -28,6 +28,11 @@ type Result struct {
 	Url  string `json:"url"`
 }
 
+type DeleteResponse struct {
+	Deleted bool   `json:"deleted"`
+	Code    string `json:"code"`
+}
+
 func NewRoot(a *App) *cobra.Command {
 	var cfgFile string
 
