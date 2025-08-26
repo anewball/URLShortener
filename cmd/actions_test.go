@@ -501,3 +501,10 @@ func TestNewList(t *testing.T) {
 	assert.Same(t, buf, gotOut)
 	assert.NotNil(t, gotCtx)
 }
+
+func TestNewRoot(t *testing.T) {
+	app := &App{S: &mockedShortener{}}
+	listCmd := NewRoot(app)
+
+	assert.NotNil(t, listCmd)
+}
