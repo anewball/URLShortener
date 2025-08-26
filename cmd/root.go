@@ -53,8 +53,10 @@ func NewRoot(app *App) *cobra.Command {
 	return rootCmd
 }
 
-func newPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
-	cfg, err := pgxpool.ParseConfig(dbURL)
+func newPool(ctx context.Context, dns string) (*pgxpool.Pool, error) {
+	var factory Factory = &RealFactory{}
+
+	cfg, err := factory.ParseConfig(dns)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +67,7 @@ func newPool(ctx context.Context, dbURL string) (*pgxpool.Pool, error) {
 	cfg.MaxConnIdleTime = 5 * time.Minute  // Set maximum idle time for connections to 5 minutes
 	cfg.HealthCheckPeriod = 30 * time.Second
 
-	return pgxpool.NewWithConfig(ctx, cfg)
+	return factory.NewWithConfig(ctx, cfg)
 }
 
 func Run() error {
