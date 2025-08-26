@@ -371,3 +371,133 @@ func TestNewDelete(t *testing.T) {
 	assert.Same(t, buf, gotOut)
 	assert.NotNil(t, gotCtx)
 }
+
+func TestListAction(t *testing.T) {
+	testCases := []struct {
+		name           string
+		offset         int
+		limit          int
+		buf            bytes.Buffer
+		isError        bool
+		expectedResult []Result
+		actionFunction func(ctx context.Context, limit int, offset int, out io.Writer, app *App) error
+		shor           shortener.Shortener
+	}{
+		{
+			name:           "success",
+			offset:         0,
+			limit:          2,
+			actionFunction: listAction,
+			buf:            bytes.Buffer{},
+			expectedResult: []Result{
+				{Url: "https://anewball.com", Code: "nMHdgTh"},
+				{Url: "https://jayden.newball.com", Code: "k5aBWD5"},
+			},
+			isError: false,
+			shor: &mockedShortener{
+				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
+					return []shortener.URLItem{
+						{ID: 1, OriginalURL: "https://anewball.com", ShortCode: "nMHdgTh", CreatedAt: time.Date(2025, time.August, 25, 14, 30, 0, 0, time.UTC), ExpiresAt: nil},
+						{ID: 2, OriginalURL: "https://jayden.newball.com", ShortCode: "k5aBWD5", CreatedAt: time.Date(2025, time.August, 25, 14, 3, 0, 0, time.UTC), ExpiresAt: nil},
+					}, nil
+				},
+			},
+		},
+		{
+			name:           "limit less than zero",
+			offset:         0,
+			limit:          -2,
+			actionFunction: listAction,
+			buf:            bytes.Buffer{},
+			expectedResult: []Result{},
+			isError:        true,
+			shor:           &mockedShortener{},
+		},
+		{
+			name:           "offset less than zero",
+			offset:         -2,
+			limit:          2,
+			actionFunction: listAction,
+			buf:            bytes.Buffer{},
+			expectedResult: []Result{},
+			isError:        true,
+			shor:           &mockedShortener{},
+		},
+		{
+			name:           "list returned error",
+			offset:         0,
+			limit:          2,
+			actionFunction: listAction,
+			buf:            bytes.Buffer{},
+			expectedResult: []Result{},
+			isError:        true,
+			shor: &mockedShortener{
+				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
+					return []shortener.URLItem{}, errors.New("could not retrieve data")
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			app := &App{S: tc.shor}
+
+			err := tc.actionFunction(ctx, tc.limit, tc.offset, &tc.buf, app)
+
+			if tc.isError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			got := tc.buf.String()
+			assert.NotEmpty(t, got)
+
+			var actualResult []Result
+			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expectedResult, actualResult)
+
+			assert.True(t, strings.HasSuffix(got, "\n"))
+		})
+	}
+}
+
+func TestNewList(t *testing.T) {
+	t.Cleanup(func() { listActionFunc = listAction })
+
+	called := false
+	var gotCtx context.Context
+	var gotOut io.Writer
+
+	app := &App{S: &mockedShortener{}}
+	listCmd := NewList(app)
+
+	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, app *App) error {
+		called = true
+		gotCtx = ctx
+		gotOut = out
+		return nil
+	}
+
+	assert.Equal(t, "list", listCmd.Use)
+	assert.NotNil(t, listCmd.RunE)
+
+	buf := &bytes.Buffer{}
+	listCmd.SetOut(buf)
+	listCmd.SetErr(io.Discard)
+	listCmd.SetArgs([]string{"--offset", "0", "--limit", "2"})
+
+	// Execute the command exactly like a user would
+	require.NoError(t, listCmd.Execute())
+
+	// Assertions on wiring
+	assert.True(t, called, "deleteAction should be invoked")
+	assert.Same(t, buf, gotOut)
+	assert.NotNil(t, gotCtx)
+}
