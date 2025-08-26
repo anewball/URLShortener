@@ -40,15 +40,12 @@ func deleteAction(ctx context.Context, out io.Writer, app *App, args []string) e
 		return fmt.Errorf("no URL found for code %q", code)
 	}
 
-	var result struct {
-		Deleted bool   `json:"deleted"`
-		Code    string `json:"code"`
-	}
+	var response DeleteResponse
 
-	result.Deleted = deleted
-	result.Code = code
+	response.Deleted = deleted
+	response.Code = code
 
 	encoder := json.NewEncoder(out)
 
-	return encoder.Encode(result)
+	return encoder.Encode(response)
 }
