@@ -13,7 +13,7 @@ import (
 var listActionFunc = listAction
 
 func NewList(app *App) *cobra.Command {
-	return &cobra.Command{
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -23,6 +23,11 @@ func NewList(app *App) *cobra.Command {
 			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout(), app)
 		},
 	}
+
+	listCmd.Flags().IntP("limit", "n", 50, "max results to return")
+	listCmd.Flags().IntP("offset", "o", 0, "results to skip")
+
+	return listCmd
 }
 
 func listAction(ctx context.Context, limit int, offset int, out io.Writer, app *App) error {
