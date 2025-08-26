@@ -208,7 +208,7 @@ func TestGetAction(t *testing.T) {
 	}
 }
 
-func TestNewAGet(t *testing.T) {
+func TestNewGet(t *testing.T) {
 	t.Cleanup(func() { getActionFunc = getAction })
 
 	called := false
@@ -240,6 +240,133 @@ func TestNewAGet(t *testing.T) {
 
 	// Assertions on wiring
 	assert.True(t, called, "getActionFunc should be invoked")
+	assert.Equal(t, []string{"Hpa3t2B"}, gotArgs)
+	assert.Same(t, buf, gotOut)
+	assert.NotNil(t, gotCtx)
+}
+
+func TestDeleteAction(t *testing.T) {
+	testCases := []struct {
+		name           string
+		args           []string
+		buf            bytes.Buffer
+		isError        bool
+		expectedResult DeleteResponse
+		actionFunction func(context.Context, io.Writer, *App, []string) error
+		shor           shortener.Shortener
+	}{
+		{
+			name:           "success",
+			args:           []string{"Hpa3t2B"},
+			actionFunction: deleteAction,
+			buf:            bytes.Buffer{},
+			expectedResult: DeleteResponse{Deleted: true, Code: "Hpa3t2B"},
+			isError:        false,
+			shor: &mockedShortener{
+				deleteFunc: func(ctx context.Context, shortCode string) (bool, error) {
+					return true, nil
+				},
+			},
+		},
+		{
+			name:           "error produced",
+			args:           []string{"Hpa3t2B"},
+			actionFunction: deleteAction,
+			buf:            bytes.Buffer{},
+			isError:        true,
+			shor: &mockedShortener{
+				deleteFunc: func(ctx context.Context, url string) (bool, error) {
+					return false, errors.New("something went wrong")
+				},
+			},
+		},
+		{
+			name:           "error empty args",
+			args:           []string{},
+			actionFunction: deleteAction,
+			buf:            bytes.Buffer{},
+			isError:        true,
+			shor: &mockedShortener{
+				deleteFunc: func(ctx context.Context, url string) (bool, error) {
+					return false, errors.New("requires at least 1 arg(s), only received 0")
+				},
+			},
+		},
+		{
+			name:           "when row does not exists",
+			args:           []string{"Hpa3t2B"},
+			actionFunction: deleteAction,
+			buf:            bytes.Buffer{},
+			isError:        true,
+			shor: &mockedShortener{
+				deleteFunc: func(ctx context.Context, url string) (bool, error) {
+					return false, nil
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			app := &App{S: tc.shor}
+
+			err := tc.actionFunction(ctx, &tc.buf, app, tc.args)
+
+			if tc.isError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			got := tc.buf.String()
+			assert.NotEmpty(t, got)
+
+			var actualResult DeleteResponse
+			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tc.expectedResult, actualResult)
+
+			assert.True(t, strings.HasSuffix(got, "\n"))
+		})
+	}
+}
+
+func TestNewDelete(t *testing.T) {
+	t.Cleanup(func() { deleteActionFunc = deleteAction })
+
+	called := false
+	var gotCtx context.Context
+	var gotOut io.Writer
+	var gotArgs []string
+
+	deleteActionFunc = func(ctx context.Context, out io.Writer, a *App, args []string) error {
+		called = true
+		gotCtx = ctx
+		gotOut = out
+		gotArgs = append([]string(nil), args...)
+		return nil
+	}
+
+	app := &App{S: &mockedShortener{}}
+	cmd := NewDelete(app)
+
+	assert.Equal(t, "delete <code>", cmd.Use)
+	assert.NotNil(t, cmd.RunE)
+
+	buf := &bytes.Buffer{}
+	cmd.SetOut(buf)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"Hpa3t2B"})
+
+	// Execute the command exactly like a user would
+	require.NoError(t, cmd.ExecuteContext(context.Background()))
+
+	// Assertions on wiring
+	assert.True(t, called, "deleteAction should be invoked")
 	assert.Equal(t, []string{"Hpa3t2B"}, gotArgs)
 	assert.Same(t, buf, gotOut)
 	assert.NotNil(t, gotCtx)
