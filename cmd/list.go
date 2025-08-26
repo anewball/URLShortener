@@ -4,47 +4,49 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/spf13/cobra"
 )
 
-func NewList(a *App) *cobra.Command {
-	c := &cobra.Command{
+var listActionFunc = listAction
+
+func NewList(app *App) *cobra.Command {
+	return &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
 
-			if limit <= 0 || offset < 0 {
-				return fmt.Errorf("limit must be between 1 and 1000")
-			}
-			if offset < 0 {
-				return fmt.Errorf("offset cannot be negative")
-			}
-
-			ctx, cancel := context.WithTimeout(cmd.Context(), 5*time.Second)
-			defer cancel()
-
-			urlItems, err := a.S.List(ctx, limit, offset)
-			if err != nil {
-				return fmt.Errorf("failed to list URLs: %w", err)
-			}
-
-			var results []Result
-			for _, u := range urlItems {
-				results = append(results, Result{Code: u.ShortCode, Url: u.OriginalURL})
-			}
-
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-
-			return encoder.Encode(results)
+			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout(), app)
 		},
 	}
+}
 
-	c.Flags().IntP("limit", "n", 50, "max results to return")
-	c.Flags().IntP("offset", "o", 0, "results to skip")
+func listAction(ctx context.Context, limit int, offset int, out io.Writer, app *App) error {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
-	return c
+	if limit <= 0 {
+		return fmt.Errorf("limit must be between 1 and 1000")
+	}
+	if offset < 0 {
+		return fmt.Errorf("offset cannot be negative")
+	}
+
+	urlItems, err := app.S.List(ctx, limit, offset)
+	if err != nil {
+		return fmt.Errorf("failed to list URLs: %w", err)
+	}
+
+	var results []Result
+	for _, u := range urlItems {
+		results = append(results, Result{Code: u.ShortCode, Url: u.OriginalURL})
+	}
+
+	encoder := json.NewEncoder(out)
+
+	return encoder.Encode(results)
 }
