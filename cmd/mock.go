@@ -42,3 +42,11 @@ func (m *MockFactory) ParseConfig(dsn string) (*pgxpool.Config, error) {
 func (m *MockFactory) NewWithConfig(ctx context.Context, cfg *pgxpool.Config) (*pgxpool.Pool, error) {
 	return m.NewWithConfigFunc(ctx, cfg)
 }
+
+type MockEnv struct {
+	GetFunc func(string) string
+}
+
+func (m *MockEnv) Get(K string) string {
+	return m.GetFunc(K)
+}
