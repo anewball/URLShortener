@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/anewball/urlshortener/internal/shortener"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -507,4 +508,74 @@ func TestNewRoot(t *testing.T) {
 	listCmd := NewRoot(app)
 
 	assert.NotNil(t, listCmd)
+}
+
+func TestNewPool(t *testing.T) {
+	testCases := []struct {
+		name    string
+		buf     bytes.Buffer
+		factory Factory
+		dns     string
+		isError bool
+	}{
+		{
+			name: "success",
+			buf:  bytes.Buffer{},
+			dns:  "dns://",
+			factory: &MockFactory{
+				ParseConfigFunc: func(dns string) (*pgxpool.Config, error) {
+					return &pgxpool.Config{}, nil
+				},
+				NewWithConfigFunc: func(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error) {
+					return &pgxpool.Pool{}, nil
+				},
+			},
+			isError: false,
+		},
+		{
+			name: "error parsing config",
+			buf:  bytes.Buffer{},
+			dns:  "dns://",
+			factory: &MockFactory{
+				ParseConfigFunc: func(dns string) (*pgxpool.Config, error) {
+					return nil, errors.New("error when parse config")
+				},
+			},
+			isError: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			pool, err := newPool(ctx, tc.dns, tc.factory)
+
+			if tc.isError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NotNil(t, pool)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestNewApp(t *testing.T) {
+	var factory Factory = &MockFactory{
+		ParseConfigFunc: func(dns string) (*pgxpool.Config, error) {
+			return &pgxpool.Config{}, nil
+		},
+		NewWithConfigFunc: func(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error) {
+			return &pgxpool.Pool{}, nil
+		},
+	}
+	p, err := newPool(context.Background(), "dns://", factory)
+	assert.NoError(t, err)
+	assert.NotNil(t, p)
+
+	app := NewApp(p)
+	assert.NotNil(t, app)
 }
