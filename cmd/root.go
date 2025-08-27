@@ -78,14 +78,16 @@ func Run() error {
 	// This can be done using a package like godotenv
 	_ = godotenv.Load()
 
-	dsn := os.Getenv("DATABASE_URL")
+	var env Env = &realEnv{}
+
+	dsn := env.Get("DATABASE_URL")
 	if dsn == "" {
 		return fmt.Errorf("DATABASE_URL environment variable is not set")
 	}
 
 	var factory Factory = &RealFactory{}
 
-	p, err := newPool(ctx, os.Getenv("DATABASE_URL"), factory)
+	p, err := newPool(ctx, dsn, factory)
 	if err != nil {
 		return err
 	}

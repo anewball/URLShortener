@@ -9,6 +9,6 @@ type Env interface {
 type realEnv struct {
 }
 
-func (realEnv) Get(k string) string {
+func (*realEnv) Get(k string) string {
 	return os.Getenv(k)
 }
