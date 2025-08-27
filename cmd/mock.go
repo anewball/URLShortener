@@ -35,8 +35,8 @@ type MockFactory struct {
 	NewWithConfigFunc func(context.Context, *pgxpool.Config) (*pgxpool.Pool, error)
 }
 
-func (m *MockFactory) ParseConfig(dns string) (*pgxpool.Config, error) {
-	return m.ParseConfigFunc(dns)
+func (m *MockFactory) ParseConfig(dsn string) (*pgxpool.Config, error) {
+	return m.ParseConfigFunc(dsn)
 }
 
 func (m *MockFactory) NewWithConfig(ctx context.Context, cfg *pgxpool.Config) (*pgxpool.Pool, error) {
