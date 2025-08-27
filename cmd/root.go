@@ -53,9 +53,7 @@ func NewRoot(app *App) *cobra.Command {
 	return rootCmd
 }
 
-func newPool(ctx context.Context, dns string) (*pgxpool.Pool, error) {
-	var factory Factory = &RealFactory{}
-
+func newPool(ctx context.Context, dns string, factory Factory) (*pgxpool.Pool, error) {
 	cfg, err := factory.ParseConfig(dns)
 	if err != nil {
 		return nil, err
@@ -85,7 +83,9 @@ func Run() error {
 		return fmt.Errorf("DATABASE_URL environment variable is not set")
 	}
 
-	p, err := newPool(ctx, os.Getenv("DATABASE_URL"))
+	var factory Factory = &RealFactory{}
+
+	p, err := newPool(ctx, os.Getenv("DATABASE_URL"), factory)
 	if err != nil {
 		return err
 	}
