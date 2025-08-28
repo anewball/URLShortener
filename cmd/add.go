@@ -14,7 +14,7 @@ import (
 
 var addActionFunc = addAction // Indirection for testing
 
-func NewAdd(app *App) *cobra.Command {
+func NewAdd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "add <url>",
 		Short: "Save a URL to the shortener service",
