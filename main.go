@@ -2,16 +2,20 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/anewball/urlshortener/cmd"
-	"github.com/joho/godotenv"
+	"github.com/spf13/viper"
 )
 
 func main() {
-	// Load environment variables from .env file if needed
-	// This can be done using a package like godotenv
-	_ = godotenv.Load()
+	viper.SetConfigName("config")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath(".")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Printf("No config file found, using env only")
+	}
 
 	if err := cmd.Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
