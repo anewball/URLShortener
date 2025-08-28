@@ -510,72 +510,66 @@ func TestNewRoot(t *testing.T) {
 	assert.NotNil(t, listCmd)
 }
 
-func TestNewPool(t *testing.T) {
+func TestNewApp(t *testing.T) {
+	var factory PoolFactory = &MockPoolFactory{
+		NewPoolFunc: func(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+			return &pgxpool.Pool{}, nil
+		},
+	}
+
+	assert.NotNil(t, factory)
+
+	root, _ := factory.NewPool(context.Background(), "dsn")
+
+	app := NewApp(root)
+	assert.NotNil(t, app)
+}
+
+func TestRun(t *testing.T) {
 	testCases := []struct {
 		name    string
-		buf     bytes.Buffer
-		factory Factory
-		dsn     string
 		isError bool
+		args    []string
+		env     Env
+		factory PoolFactory
+		shor    shortener.Shortener
 	}{
 		{
-			name: "success",
-			buf:  bytes.Buffer{},
-			dsn:  "dsn://",
-			factory: &MockFactory{
-				ParseConfigFunc: func(dsn string) (*pgxpool.Config, error) {
-					return &pgxpool.Config{}, nil
+			name:    "success",
+			args:    []string{"get", "Hpa3t2B"},
+			isError: false,
+			env: &MockEnv{
+				GetFunc: func(string) string {
+					return "//dsn:localhost"
 				},
-				NewWithConfigFunc: func(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error) {
+			},
+			factory: &MockPoolFactory{
+				NewPoolFunc: func(context.Context, string) (*pgxpool.Pool, error) {
 					return &pgxpool.Pool{}, nil
 				},
 			},
-			isError: false,
-		},
-		{
-			name: "error parsing config",
-			buf:  bytes.Buffer{},
-			dsn:  "dsn://",
-			factory: &MockFactory{
-				ParseConfigFunc: func(dsn string) (*pgxpool.Config, error) {
-					return nil, errors.New("error when parse config")
+			shor: &mockedShortener{
+				getFunc: func(ctx context.Context, shortCode string) (string, error) {
+					return "https://example.com", nil
 				},
 			},
-			isError: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
+			ctx := context.Background()
 
-			pool, err := newPool(ctx, tc.dsn, tc.factory)
+			app := &App{S: tc.shor}
+
+			err := runWith(ctx, tc.env, tc.factory, app, tc.args...)
 
 			if tc.isError {
 				assert.Error(t, err)
 				return
 			}
 
-			assert.NotNil(t, pool)
 			assert.NoError(t, err)
 		})
 	}
-}
-
-func TestNewApp(t *testing.T) {
-	var factory Factory = &MockFactory{
-		ParseConfigFunc: func(dsn string) (*pgxpool.Config, error) {
-			return &pgxpool.Config{}, nil
-		},
-		NewWithConfigFunc: func(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error) {
-			return &pgxpool.Pool{}, nil
-		},
-	}
-	p, err := newPool(context.Background(), "dsn://", factory)
-	assert.NoError(t, err)
-	assert.NotNil(t, p)
-
-	app := NewApp(p)
-	assert.NotNil(t, app)
 }

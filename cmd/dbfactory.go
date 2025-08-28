@@ -2,23 +2,34 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Factory defines behavior for building pools
-type Factory interface {
-	ParseConfig(dsn string) (*pgxpool.Config, error)
-	NewWithConfig(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error)
+type PoolFactory interface {
+	NewPool(context.Context, string) (*pgxpool.Pool, error)
 }
 
-// RealFactory is a factory that creates pools from a DSN
-type RealFactory struct{}
+type PostgresPoolFactory struct{}
 
-func (f *RealFactory) ParseConfig(dsn string) (*pgxpool.Config, error) {
-	return pgxpool.ParseConfig(dsn)
-}
+func (p *PostgresPoolFactory) NewPool(ctxt context.Context, dsn string) (*pgxpool.Pool, error) {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-func (f *RealFactory) NewWithConfig(ctx context.Context, config *pgxpool.Config) (*pgxpool.Pool, error) {
-	return pgxpool.NewWithConfig(ctx, config)
+	cfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.MaxConns = 4                       // Set maximum number of connections to 4
+	cfg.MinConns = 1                       // Set minimum number of connections to 1
+	cfg.MaxConnLifetime = 30 * time.Minute // Set maximum connection lifetime to 30 minutes
+	cfg.MaxConnIdleTime = 5 * time.Minute  // Set maximum idle time for connections to 5 minutes
+	cfg.HealthCheckPeriod = 30 * time.Second
+
+	return pgxpool.NewWithConfig(ctx, cfg)
 }

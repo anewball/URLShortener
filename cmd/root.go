@@ -7,11 +7,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/anewball/urlshortener/internal/shortener"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/joho/godotenv"
 	"github.com/spf13/cobra"
 )
 
@@ -53,57 +50,52 @@ func NewRoot(app *App) *cobra.Command {
 	return rootCmd
 }
 
-func newPool(ctx context.Context, dns string, factory Factory) (*pgxpool.Pool, error) {
-	cfg, err := factory.ParseConfig(dns)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg.MaxConns = 4                       // Set maximum number of connections to 4
-	cfg.MinConns = 1                       // Set minimum number of connections to 1
-	cfg.MaxConnLifetime = 30 * time.Minute // Set maximum connection lifetime to 30 minutes
-	cfg.MaxConnIdleTime = 5 * time.Minute  // Set maximum idle time for connections to 5 minutes
-	cfg.HealthCheckPeriod = 30 * time.Second
-
-	return factory.NewWithConfig(ctx, cfg)
-}
-
-func Run() error {
+func runWith(ctx context.Context, env Env, poolFactory PoolFactory, app *App, args ...string) error {
 	log.SetOutput(os.Stderr)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	// Load environment variables from .env file if needed
-	// This can be done using a package like godotenv
-	_ = godotenv.Load()
-
-	var env Env = &realEnv{}
+	if app != nil && app.S != nil {
+		root := NewRoot(app)
+		root.SetContext(ctx)
+		root.SetArgs(args)
+		return root.Execute()
+	}
 
 	dsn := env.Get("DATABASE_URL")
 	if dsn == "" {
 		return fmt.Errorf("DATABASE_URL environment variable is not set")
 	}
 
-	var factory Factory = &RealFactory{}
-
-	p, err := newPool(ctx, dsn, factory)
+	pool, err := poolFactory.NewPool(ctx, dsn)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		pool.Close()
+		log.Println("Database connection pool closed")
+	}()
+
 	log.Println("Connected to database successfully")
 
-	app := NewApp(p)
+	app.S = shortener.New(pool)
 
 	root := NewRoot(app)
 	root.SetContext(ctx)
+	root.SetArgs(args)
 
 	if err := root.Execute(); err != nil {
 		return err
 	}
 
-	defer p.Close()
-	log.Println("Database connection pool closed")
-
 	return nil
+}
+
+func Run() error {
+	app := &App{}
+	var env Env = &realEnv{}
+	var poolFactory PoolFactory = &PostgresPoolFactory{}
+
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	return runWith(ctx, env, poolFactory, app)
 }

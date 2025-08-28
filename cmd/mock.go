@@ -30,23 +30,18 @@ func (m *mockedShortener) Delete(ctx context.Context, code string) (bool, error)
 	return m.deleteFunc(ctx, code)
 }
 
-type MockFactory struct {
-	ParseConfigFunc   func(string) (*pgxpool.Config, error)
-	NewWithConfigFunc func(context.Context, *pgxpool.Config) (*pgxpool.Pool, error)
-}
-
-func (m *MockFactory) ParseConfig(dsn string) (*pgxpool.Config, error) {
-	return m.ParseConfigFunc(dsn)
-}
-
-func (m *MockFactory) NewWithConfig(ctx context.Context, cfg *pgxpool.Config) (*pgxpool.Pool, error) {
-	return m.NewWithConfigFunc(ctx, cfg)
-}
-
 type MockEnv struct {
 	GetFunc func(string) string
 }
 
 func (m *MockEnv) Get(K string) string {
 	return m.GetFunc(K)
+}
+
+type MockPoolFactory struct {
+	NewPoolFunc func(context.Context, string) (*pgxpool.Pool, error)
+}
+
+func (m *MockPoolFactory) NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	return m.NewPoolFunc(ctx, dsn)
 }
