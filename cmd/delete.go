@@ -7,23 +7,24 @@ import (
 	"io"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
 var deleteActionFunc = deleteAction
 
-func NewDelete(app *App) *cobra.Command {
+func NewDelete() *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <code>",
 		Short: "Delete a URL from the shortener service by short code",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return deleteActionFunc(cmd.Context(), cmd.OutOrStdout(), app, args)
+			return deleteActionFunc(cmd.Context(), cmd.OutOrStdout(), args)
 		},
 	}
 }
 
-func deleteAction(ctx context.Context, out io.Writer, app *App, args []string) error {
+func deleteAction(ctx context.Context, out io.Writer, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -32,7 +33,8 @@ func deleteAction(ctx context.Context, out io.Writer, app *App, args []string) e
 	}
 	code := args[0]
 
-	deleted, err := app.S.Delete(ctx, code)
+	service := shortener.New(pool)
+	deleted, err := service.Delete(ctx, code)
 	if err != nil {
 		return fmt.Errorf("failed to delete URL: %w", err)
 	}
