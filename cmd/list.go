@@ -7,12 +7,13 @@ import (
 	"io"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
 var listActionFunc = listAction
 
-func NewList(app *App) *cobra.Command {
+func NewList() *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
@@ -20,7 +21,7 @@ func NewList(app *App) *cobra.Command {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
 
-			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout(), app)
+			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout())
 		},
 	}
 
@@ -30,7 +31,7 @@ func NewList(app *App) *cobra.Command {
 	return listCmd
 }
 
-func listAction(ctx context.Context, limit int, offset int, out io.Writer, app *App) error {
+func listAction(ctx context.Context, limit int, offset int, out io.Writer) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -41,7 +42,8 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer, app *
 		return fmt.Errorf("offset cannot be negative")
 	}
 
-	urlItems, err := app.S.List(ctx, limit, offset)
+	service := shortener.New(pool)
+	urlItems, err := service.List(ctx, limit, offset)
 	if err != nil {
 		return fmt.Errorf("failed to list URLs: %w", err)
 	}

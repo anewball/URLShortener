@@ -2,14 +2,12 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/anewball/urlshortener/internal/db"
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,29 +15,12 @@ import (
 
 var pool *pgxpool.Pool
 
-func initApp() error {
-	ctx := context.Background()
-
+func getDBPool(ctx context.Context) (*pgxpool.Pool, error) {
 	dbCfg := db.Config{
 		URL: viper.GetString("db.url"),
 	}
 
-	p, err := db.NewPool(ctx, dbCfg)
-	if err != nil {
-		return err
-	}
-
-	pool = p
-
-	return nil
-}
-
-type App struct {
-	S shortener.Shortener
-}
-
-func NewApp(dbConn shortener.DatabaseConn) *App {
-	return &App{S: shortener.New(dbConn)}
+	return db.NewPool(ctx, dbCfg)
 }
 
 type Result struct {
@@ -52,7 +33,7 @@ type DeleteResponse struct {
 	Code    string `json:"code"`
 }
 
-func NewRoot(app *App) *cobra.Command {
+func NewRoot() *cobra.Command {
 	var cfgFile string
 
 	rootCmd := &cobra.Command{
@@ -63,37 +44,28 @@ func NewRoot(app *App) *cobra.Command {
 		SilenceErrors: true,
 		Version:       "0.1.0",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return initApp()
+			p, err := getDBPool(cmd.Context())
+			if err != nil {
+				return err
+			}
+
+			pool = p
+
+			return nil
 		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
 	rootCmd.PersistentFlags().String("author", "Andy Newball", "author of the URL shortener")
 
-	rootCmd.AddCommand(NewAdd(app), NewDelete(app), NewGet(app), NewList(app))
+	rootCmd.AddCommand(NewAdd(), NewDelete(), NewGet(), NewList())
 
 	return rootCmd
 }
 
-func runWith(ctx context.Context, env Env, poolFactory PoolFactory, app *App, args ...string) error {
+func runWith(ctx context.Context, args ...string) error {
 	log.SetOutput(os.Stderr)
 
-	if app != nil && app.S != nil {
-		root := NewRoot(app)
-		root.SetContext(ctx)
-		root.SetArgs(args)
-		return root.Execute()
-	}
-
-	dsn := env.Get("DATABASE_URL")
-	if dsn == "" {
-		return fmt.Errorf("DATABASE_URL environment variable is not set")
-	}
-
-	pool, err := poolFactory.NewPool(ctx, dsn)
-	if err != nil {
-		return err
-	}
 	defer func() {
 		pool.Close()
 		log.Println("Database connection pool closed")
@@ -101,9 +73,7 @@ func runWith(ctx context.Context, env Env, poolFactory PoolFactory, app *App, ar
 
 	log.Println("Connected to database successfully")
 
-	app.S = shortener.New(pool)
-
-	root := NewRoot(app)
+	root := NewRoot()
 	root.SetContext(ctx)
 	root.SetArgs(args)
 
@@ -115,12 +85,8 @@ func runWith(ctx context.Context, env Env, poolFactory PoolFactory, app *App, ar
 }
 
 func Run() error {
-	app := &App{}
-	var env Env = &realEnv{}
-	var poolFactory PoolFactory = &PostgresPoolFactory{}
-
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	return runWith(ctx, env, poolFactory, app)
+	return runWith(ctx)
 }
