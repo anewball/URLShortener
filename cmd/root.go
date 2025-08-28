@@ -8,9 +8,31 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
+
+var pool *pgxpool.Pool
+
+func initApp() error {
+	ctx := context.Background()
+
+	dbCfg := db.Config{
+		URL: viper.GetString("db.url"),
+	}
+
+	p, err := db.NewPool(ctx, dbCfg)
+	if err != nil {
+		return err
+	}
+
+	pool = p
+
+	return nil
+}
 
 type App struct {
 	S shortener.Shortener
@@ -40,6 +62,9 @@ func NewRoot(app *App) *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       "0.1.0",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return initApp()
+		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
