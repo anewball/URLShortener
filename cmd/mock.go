@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/anewball/urlshortener/internal/shortener"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type mockedShortener struct {
@@ -28,20 +27,4 @@ func (m *mockedShortener) List(ctx context.Context, limit, offset int) ([]shorte
 
 func (m *mockedShortener) Delete(ctx context.Context, code string) (bool, error) {
 	return m.deleteFunc(ctx, code)
-}
-
-type MockEnv struct {
-	GetFunc func(string) string
-}
-
-func (m *MockEnv) Get(K string) string {
-	return m.GetFunc(K)
-}
-
-type MockPoolFactory struct {
-	NewPoolFunc func(context.Context, string) (*pgxpool.Pool, error)
-}
-
-func (m *MockPoolFactory) NewPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	return m.NewPoolFunc(ctx, dsn)
 }
