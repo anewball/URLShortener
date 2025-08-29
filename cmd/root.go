@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -62,6 +63,10 @@ func runWith(ctx context.Context, args ...string) error {
 		return err
 	}
 	pool = p
+
+	if pool == nil{
+		return fmt.Errorf("db: nil pool")
+	}
 
 	defer func() {
 		if pool != nil {
