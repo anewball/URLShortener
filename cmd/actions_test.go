@@ -6,12 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/anewball/urlshortener/internal/shortener"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -23,7 +23,7 @@ func TestAddActions(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult Result
-		actionFunction func(context.Context, io.Writer, *App, []string) error
+		actionFunction func(context.Context, io.Writer, shortener.Shortener, []string) error
 		shor           shortener.Shortener
 	}{
 		{
@@ -70,9 +70,7 @@ func TestAddActions(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			app := &App{S: tc.shor}
-
-			err := tc.actionFunction(ctx, &tc.buf, app, tc.args)
+			err := tc.actionFunction(ctx, &tc.buf, tc.shor, tc.args)
 
 			if tc.isError {
 				assert.Error(t, err)
@@ -102,7 +100,7 @@ func TestNewAdd(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	addActionFunc = func(ctx context.Context, out io.Writer, a *App, args []string) error {
+	addActionFunc = func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -110,8 +108,7 @@ func TestNewAdd(t *testing.T) {
 		return nil
 	}
 
-	app := &App{S: &mockedShortener{}}
-	cmd := NewAdd(app)
+	cmd := NewAdd()
 
 	assert.Equal(t, "add <url>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -138,7 +135,7 @@ func TestGetAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult Result
-		actionFunction func(context.Context, io.Writer, *App, []string) error
+		actionFunction func(context.Context, io.Writer, shortener.Shortener, []string) error
 		shor           shortener.Shortener
 	}{
 		{
@@ -185,9 +182,7 @@ func TestGetAction(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			app := &App{S: tc.shor}
-
-			err := tc.actionFunction(ctx, &tc.buf, app, tc.args)
+			err := tc.actionFunction(ctx, &tc.buf, tc.shor, tc.args)
 
 			if tc.isError {
 				assert.Error(t, err)
@@ -217,7 +212,7 @@ func TestNewGet(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	getActionFunc = func(ctx context.Context, out io.Writer, a *App, args []string) error {
+	getActionFunc = func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -225,8 +220,7 @@ func TestNewGet(t *testing.T) {
 		return nil
 	}
 
-	app := &App{S: &mockedShortener{}}
-	cmd := NewGet(app)
+	cmd := NewGet()
 
 	assert.Equal(t, "get <code>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -253,7 +247,7 @@ func TestDeleteAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult DeleteResponse
-		actionFunction func(context.Context, io.Writer, *App, []string) error
+		actionFunction func(context.Context, io.Writer, shortener.Shortener, []string) error
 		shor           shortener.Shortener
 	}{
 		{
@@ -312,9 +306,7 @@ func TestDeleteAction(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			app := &App{S: tc.shor}
-
-			err := tc.actionFunction(ctx, &tc.buf, app, tc.args)
+			err := tc.actionFunction(ctx, &tc.buf, tc.shor, tc.args)
 
 			if tc.isError {
 				assert.Error(t, err)
@@ -344,7 +336,7 @@ func TestNewDelete(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	deleteActionFunc = func(ctx context.Context, out io.Writer, a *App, args []string) error {
+	deleteActionFunc = func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -352,8 +344,7 @@ func TestNewDelete(t *testing.T) {
 		return nil
 	}
 
-	app := &App{S: &mockedShortener{}}
-	cmd := NewDelete(app)
+	cmd := NewDelete()
 
 	assert.Equal(t, "delete <code>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -381,7 +372,7 @@ func TestListAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult []Result
-		actionFunction func(ctx context.Context, limit int, offset int, out io.Writer, app *App) error
+		actionFunction func(context.Context, int, int, io.Writer, shortener.Shortener) error
 		shor           shortener.Shortener
 	}{
 		{
@@ -445,9 +436,7 @@ func TestListAction(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			app := &App{S: tc.shor}
-
-			err := tc.actionFunction(ctx, tc.limit, tc.offset, &tc.buf, app)
+			err := tc.actionFunction(ctx, tc.limit, tc.offset, &tc.buf, tc.shor)
 
 			if tc.isError {
 				assert.Error(t, err)
@@ -476,10 +465,9 @@ func TestNewList(t *testing.T) {
 	var gotCtx context.Context
 	var gotOut io.Writer
 
-	app := &App{S: &mockedShortener{}}
-	listCmd := NewList(app)
+	listCmd := NewList()
 
-	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, app *App) error {
+	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Shortener) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -504,72 +492,87 @@ func TestNewList(t *testing.T) {
 }
 
 func TestNewRoot(t *testing.T) {
-	app := &App{S: &mockedShortener{}}
-	listCmd := NewRoot(app)
+	listCmd := NewRoot()
 
 	assert.NotNil(t, listCmd)
 }
 
-func TestNewApp(t *testing.T) {
-	var factory PoolFactory = &MockPoolFactory{
-		NewPoolFunc: func(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-			return &pgxpool.Pool{}, nil
-		},
-	}
+func TestRunWith(t *testing.T) {
+	// Restore after test
+	t.Cleanup(func() { getDBPoolFunc = getDBPool })
+	t.Cleanup(func() { getActionFunc = getAction })
 
-	assert.NotNil(t, factory)
-
-	root, _ := factory.NewPool(context.Background(), "dsn")
-
-	app := NewApp(root)
-	assert.NotNil(t, app)
-}
-
-func TestRun(t *testing.T) {
 	testCases := []struct {
-		name    string
-		isError bool
-		args    []string
-		env     Env
-		factory PoolFactory
-		shor    shortener.Shortener
+		name       string
+		args       []string
+		isError    bool
+		dbFunc     func(context.Context) (shortener.DatabaseConn, error)
+		actionFunc func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error
 	}{
 		{
 			name:    "success",
 			args:    []string{"get", "Hpa3t2B"},
 			isError: false,
-			env: &MockEnv{
-				GetFunc: func(string) string {
-					return "//dsn:localhost"
-				},
+			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+				return nil, nil
 			},
-			factory: &MockPoolFactory{
-				NewPoolFunc: func(context.Context, string) (*pgxpool.Pool, error) {
-					return &pgxpool.Pool{}, nil
-				},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+				return nil
 			},
-			shor: &mockedShortener{
-				getFunc: func(ctx context.Context, shortCode string) (string, error) {
-					return "https://example.com", nil
-				},
+		},
+		{
+			name:    "failed db",
+			args:    []string{"get", "Hpa3t2B"},
+			isError: true,
+			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+				return nil, errors.New("error when opening db")
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:    "failed with wrong command",
+			args:    []string{"get1", "Hpa3t2B"},
+			isError: true,
+			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+				return nil, nil
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:    "defer db pool",
+			args:    []string{"get", "Hpa3t2B"},
+			isError: false,
+			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+				m := &mockPool{
+					closeFunc: func() {
+						log.Println("DB is closed")
+					},
+				}
+				return m, nil
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+				return nil
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ctx := context.Background()
+			getDBPoolFunc = tc.dbFunc
+			getActionFunc = tc.actionFunc
 
-			app := &App{S: tc.shor}
-
-			err := runWith(ctx, tc.env, tc.factory, app, tc.args...)
+			err := runWith(context.Background(), tc.args...)
 
 			if tc.isError {
 				assert.Error(t, err)
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		})
 	}
 }
