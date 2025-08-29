@@ -8,14 +8,16 @@ import (
 	"syscall"
 
 	"github.com/anewball/urlshortener/internal/db"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var pool *pgxpool.Pool
+var pool shortener.DatabaseConn
 
-func getDBPool(ctx context.Context) (*pgxpool.Pool, error) {
+var getDBPoolFunc = getDBPool
+
+func getDBPool(ctx context.Context) (shortener.DatabaseConn, error) {
 	dbCfg := db.Config{
 		URL: viper.GetString("db.url"),
 	}
@@ -43,16 +45,6 @@ func NewRoot() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       "0.1.0",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			p, err := getDBPool(cmd.Context())
-			if err != nil {
-				return err
-			}
-
-			pool = p
-
-			return nil
-		},
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
@@ -66,9 +58,17 @@ func NewRoot() *cobra.Command {
 func runWith(ctx context.Context, args ...string) error {
 	log.SetOutput(os.Stderr)
 
+	p, err := getDBPoolFunc(ctx)
+	if err != nil {
+		return err
+	}
+	pool = p
+
 	defer func() {
-		pool.Close()
-		log.Println("Database connection pool closed")
+		if pool != nil {
+			pool.Close()
+			log.Println("Database connection pool closed")
+		}
 	}()
 
 	log.Println("Connected to database successfully")
