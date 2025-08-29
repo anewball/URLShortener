@@ -14,6 +14,7 @@ type mockDatabaseConn struct {
 	ExecFunc     func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	QueryRowFunc func(ctx context.Context, sql string, args ...any) pgx.Row
 	QueryFunc    func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	CloseFunc    func()
 }
 
 func (m *mockDatabaseConn) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
@@ -35,6 +36,12 @@ func (m *mockDatabaseConn) Query(ctx context.Context, sql string, args ...any) (
 		return m.QueryFunc(ctx, sql, args...)
 	}
 	return nil, nil
+}
+
+func (m *mockDatabaseConn) Close() {
+	if m.CloseFunc != nil {
+		m.CloseFunc()
+	}
 }
 
 // mockRow is a mock implementation of pgx.Row.
