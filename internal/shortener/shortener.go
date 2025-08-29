@@ -110,7 +110,7 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	}
 
 	if len(urlItems) == 0 {
-		return []URLItem{}, nil
+		return []URLItem{}, errors.New("no URLs found")
 	}
 
 	return urlItems, nil
