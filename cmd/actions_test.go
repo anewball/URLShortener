@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -506,14 +507,14 @@ func TestRunWith(t *testing.T) {
 		name       string
 		args       []string
 		isError    bool
-		dbFunc     func(context.Context) (shortener.DatabaseConn, error)
+		dbFunc     func(context.Context) (db.Conn, error)
 		actionFunc func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error
 	}{
 		{
 			name:    "success",
 			args:    []string{"get", "Hpa3t2B"},
 			isError: false,
-			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+			dbFunc: func(ctx context.Context) (db.Conn, error) {
 				return nil, nil
 			},
 			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
@@ -524,7 +525,7 @@ func TestRunWith(t *testing.T) {
 			name:    "failed db",
 			args:    []string{"get", "Hpa3t2B"},
 			isError: true,
-			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+			dbFunc: func(ctx context.Context) (db.Conn, error) {
 				return nil, errors.New("error when opening db")
 			},
 			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
@@ -535,7 +536,7 @@ func TestRunWith(t *testing.T) {
 			name:    "failed with wrong command",
 			args:    []string{"get1", "Hpa3t2B"},
 			isError: true,
-			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+			dbFunc: func(ctx context.Context) (db.Conn, error) {
 				return nil, nil
 			},
 			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
@@ -546,7 +547,7 @@ func TestRunWith(t *testing.T) {
 			name:    "defer db pool",
 			args:    []string{"get", "Hpa3t2B"},
 			isError: false,
-			dbFunc: func(ctx context.Context) (shortener.DatabaseConn, error) {
+			dbFunc: func(ctx context.Context) (db.Conn, error) {
 				m := &mockPool{
 					closeFunc: func() {
 						log.Println("DB is closed")
