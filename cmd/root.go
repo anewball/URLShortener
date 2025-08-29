@@ -8,16 +8,15 @@ import (
 	"syscall"
 
 	"github.com/anewball/urlshortener/internal/db"
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var pool shortener.DatabaseConn
+var pool db.Conn
 
 var getDBPoolFunc = getDBPool
 
-func getDBPool(ctx context.Context) (shortener.DatabaseConn, error) {
+func getDBPool(ctx context.Context) (db.Conn, error) {
 	dbCfg := db.Config{
 		URL: viper.GetString("db.url"),
 	}
