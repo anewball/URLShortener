@@ -42,15 +42,24 @@ type mockPool struct {
 }
 
 func (m *mockPool) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
-	return m.queryRowFunc(ctx, sql, args...)
+	if m.queryRowFunc != nil {
+		return m.queryRowFunc(ctx, sql, args...)
+	}
+	return nil
 }
 
 func (m *mockPool) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-	return m.execFunc(ctx, sql, args...)
+	if m.execFunc != nil {
+		return m.execFunc(ctx, sql, args...)
+	}
+	return pgconn.CommandTag{}, nil
 }
 
 func (m *mockPool) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-	return m.queryFunc(ctx, sql, args...)
+	if m.queryFunc != nil {
+		return m.queryFunc(ctx, sql, args...)
+	}
+	return nil, nil
 }
 
 func (m *mockPool) Close() {
