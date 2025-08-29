@@ -20,12 +20,13 @@ func NewAdd() *cobra.Command {
 		Short: "Save a URL to the shortener service",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return addActionFunc(cmd.Context(), cmd.OutOrStdout(), args)
+			service := shortener.New(pool)
+			return addActionFunc(cmd.Context(), cmd.OutOrStdout(), service, args)
 		},
 	}
 }
 
-func addAction(ctx context.Context, out io.Writer, args []string) error {
+func addAction(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -34,7 +35,6 @@ func addAction(ctx context.Context, out io.Writer, args []string) error {
 	}
 
 	arg := args[0]
-	service := shortener.New(pool)
 	code, err := service.Add(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("failed to add URL: %w", err)
