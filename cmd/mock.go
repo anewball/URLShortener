@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -31,7 +32,7 @@ func (m *mockedShortener) Delete(ctx context.Context, code string) (bool, error)
 	return m.deleteFunc(ctx, code)
 }
 
-var _ shortener.DatabaseConn = (*mockPool)(nil)
+var _ db.Conn = (*mockPool)(nil)
 
 type mockPool struct {
 	queryRowFunc func(ctx context.Context, sql string, args ...any) pgx.Row
