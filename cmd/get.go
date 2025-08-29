@@ -20,12 +20,13 @@ func NewGet() *cobra.Command {
 		Short: "Retrieve a URL from the shortener service",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return getActionFunc(cmd.Context(), cmd.OutOrStdout(), args)
+			service := shortener.New(pool)
+			return getActionFunc(cmd.Context(), cmd.OutOrStdout(), service, args)
 		},
 	}
 }
 
-func getAction(ctx context.Context, out io.Writer, args []string) error {
+func getAction(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -34,7 +35,6 @@ func getAction(ctx context.Context, out io.Writer, args []string) error {
 	}
 
 	arg := args[0]
-	service := shortener.New(pool)
 	url, err := service.Get(ctx, arg)
 	if err != nil {
 		return fmt.Errorf("failed to retrieve original URL: %w", err)
