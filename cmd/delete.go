@@ -19,12 +19,13 @@ func NewDelete() *cobra.Command {
 		Short: "Delete a URL from the shortener service by short code",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return deleteActionFunc(cmd.Context(), cmd.OutOrStdout(), args)
+			service := shortener.New(pool)
+			return deleteActionFunc(cmd.Context(), cmd.OutOrStdout(), service, args)
 		},
 	}
 }
 
-func deleteAction(ctx context.Context, out io.Writer, args []string) error {
+func deleteAction(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -33,7 +34,6 @@ func deleteAction(ctx context.Context, out io.Writer, args []string) error {
 	}
 	code := args[0]
 
-	service := shortener.New(pool)
 	deleted, err := service.Delete(ctx, code)
 	if err != nil {
 		return fmt.Errorf("failed to delete URL: %w", err)
