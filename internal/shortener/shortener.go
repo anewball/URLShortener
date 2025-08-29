@@ -9,16 +9,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
-
-type DatabaseConn interface {
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-	Close()
-}
 
 type Shortener interface {
 	Add(ctx context.Context, url string) (string, error)
@@ -28,7 +22,7 @@ type Shortener interface {
 }
 
 type shortener struct {
-	db DatabaseConn
+	db db.Conn
 }
 
 type URLItem struct {
@@ -39,7 +33,7 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db DatabaseConn) *shortener {
+func New(db db.Conn) *shortener {
 	return &shortener{
 		db: db,
 	}
