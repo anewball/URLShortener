@@ -21,7 +21,8 @@ func NewList() *cobra.Command {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
 
-			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout())
+			service := shortener.New(pool)
+			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout(), service)
 		},
 	}
 
@@ -31,7 +32,7 @@ func NewList() *cobra.Command {
 	return listCmd
 }
 
-func listAction(ctx context.Context, limit int, offset int, out io.Writer) error {
+func listAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Shortener) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -42,7 +43,6 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer) error
 		return fmt.Errorf("offset cannot be negative")
 	}
 
-	service := shortener.New(pool)
 	urlItems, err := service.List(ctx, limit, offset)
 	if err != nil {
 		return fmt.Errorf("failed to list URLs: %w", err)
