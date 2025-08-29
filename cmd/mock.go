@@ -63,5 +63,7 @@ func (m *mockPool) Query(ctx context.Context, sql string, args ...any) (pgx.Rows
 }
 
 func (m *mockPool) Close() {
-	m.closeFunc()
+	if m.closeFunc != nil {
+		m.closeFunc()
+	}
 }
