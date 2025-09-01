@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anewball/urlshortener/env"
+	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/stretchr/testify/assert"
@@ -24,8 +26,8 @@ func TestAddActions(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult Result
-		actionFunction func(context.Context, io.Writer, shortener.Shortener, []string) error
-		shor           shortener.Shortener
+		actionFunction func(context.Context, io.Writer, shortener.Service, []string) error
+		shor           shortener.Service
 	}{
 		{
 			name:           "success",
@@ -101,7 +103,7 @@ func TestNewAdd(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	addActionFunc = func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+	addActionFunc = func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -109,7 +111,7 @@ func TestNewAdd(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewAdd()
+	cmd := NewAdd(&app.App{})
 
 	assert.Equal(t, "add <url>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -136,8 +138,8 @@ func TestGetAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult Result
-		actionFunction func(context.Context, io.Writer, shortener.Shortener, []string) error
-		shor           shortener.Shortener
+		actionFunction func(context.Context, io.Writer, shortener.Service, []string) error
+		shor           shortener.Service
 	}{
 		{
 			name:           "success",
@@ -213,7 +215,7 @@ func TestNewGet(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	getActionFunc = func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+	getActionFunc = func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -221,7 +223,7 @@ func TestNewGet(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewGet()
+	cmd := NewGet(&app.App{})
 
 	assert.Equal(t, "get <code>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -248,8 +250,8 @@ func TestDeleteAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult DeleteResponse
-		actionFunction func(context.Context, io.Writer, shortener.Shortener, []string) error
-		shor           shortener.Shortener
+		actionFunction func(context.Context, io.Writer, shortener.Service, []string) error
+		shor           shortener.Service
 	}{
 		{
 			name:           "success",
@@ -337,7 +339,7 @@ func TestNewDelete(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	deleteActionFunc = func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+	deleteActionFunc = func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -345,7 +347,7 @@ func TestNewDelete(t *testing.T) {
 		return nil
 	}
 
-	cmd := NewDelete()
+	cmd := NewDelete(&app.App{})
 
 	assert.Equal(t, "delete <code>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -373,8 +375,8 @@ func TestListAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult []Result
-		actionFunction func(context.Context, int, int, io.Writer, shortener.Shortener) error
-		shor           shortener.Shortener
+		actionFunction func(context.Context, int, int, io.Writer, shortener.Service) error
+		shor           shortener.Service
 	}{
 		{
 			name:           "success",
@@ -466,9 +468,9 @@ func TestNewList(t *testing.T) {
 	var gotCtx context.Context
 	var gotOut io.Writer
 
-	listCmd := NewList()
+	listCmd := NewList(&app.App{})
 
-	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Shortener) error {
+	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Service) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -500,54 +502,21 @@ func TestNewRoot(t *testing.T) {
 
 func TestRunWith(t *testing.T) {
 	// Restore after test
-	t.Cleanup(func() { getDBPoolFunc = getDBPool })
+	t.Cleanup(func() { getNewPoolFunc = db.NewPool })
 	t.Cleanup(func() { getActionFunc = getAction })
 
 	testCases := []struct {
 		name       string
 		args       []string
 		isError    bool
-		dbFunc     func(context.Context) (db.Conn, error)
-		actionFunc func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error
+		dbFunc     func(ctx context.Context, cfg db.Config) (db.Conn, error)
+		actionFunc func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error
 	}{
 		{
 			name:    "success",
 			args:    []string{"get", "Hpa3t2B"},
 			isError: false,
-			dbFunc: func(ctx context.Context) (db.Conn, error) {
-				return nil, nil
-			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
-				return nil
-			},
-		},
-		{
-			name:    "failed db",
-			args:    []string{"get", "Hpa3t2B"},
-			isError: true,
-			dbFunc: func(ctx context.Context) (db.Conn, error) {
-				return nil, errors.New("error when opening db")
-			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
-				return nil
-			},
-		},
-		{
-			name:    "failed with wrong command",
-			args:    []string{"get1", "Hpa3t2B"},
-			isError: true,
-			dbFunc: func(ctx context.Context) (db.Conn, error) {
-				return nil, nil
-			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
-				return nil
-			},
-		},
-		{
-			name:    "defer db pool",
-			args:    []string{"get", "Hpa3t2B"},
-			isError: false,
-			dbFunc: func(ctx context.Context) (db.Conn, error) {
+			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				m := &mockPool{
 					closeFunc: func() {
 						log.Println("DB is closed")
@@ -555,7 +524,61 @@ func TestRunWith(t *testing.T) {
 				}
 				return m, nil
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:    "failed when pool is nil",
+			args:    []string{"get", "Hpa3t2B"},
+			isError: true,
+			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
+				return nil, nil
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:    "failed db",
+			args:    []string{"get", "Hpa3t2B"},
+			isError: true,
+			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
+				return nil, errors.New("error when opening db")
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:    "failed with wrong command",
+			args:    []string{"get1", "Hpa3t2B"},
+			isError: true,
+			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
+				m := &mockPool{
+					closeFunc: func() {
+						log.Println("DB is closed")
+					},
+				}
+				return m, nil
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:    "defer db pool",
+			args:    []string{"get", "Hpa3t2B"},
+			isError: false,
+			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
+				m := &mockPool{
+					closeFunc: func() {
+						log.Println("DB is closed")
+					},
+				}
+				return m, nil
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
 				return nil
 			},
 		},
@@ -563,10 +586,10 @@ func TestRunWith(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			getDBPoolFunc = tc.dbFunc
+			getNewPoolFunc = tc.dbFunc
 			getActionFunc = tc.actionFunc
 
-			err := runWith(context.Background(), tc.args...)
+			err := runWithFunc(context.Background(), db.Config{}, tc.args...)
 
 			if tc.isError {
 				assert.Error(t, err)
@@ -574,6 +597,59 @@ func TestRunWith(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestRun(t *testing.T) {
+	oldNewEnv := newEnv
+	t.Cleanup(func() {
+		newEnv = oldNewEnv
+		runWithFunc = runWith
+	})
+
+	testCases := []struct {
+		name  string
+		env   func() env.Env
+		isErr bool
+	}{
+		{
+			name:  "success",
+			isErr: false,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						return "//dns:localhost:5432", nil
+					},
+				}
+			},
+		},
+		{
+			name:  "failed",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						return "", errors.New("not found")
+					},
+				}
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			runWithFunc = func(ctx context.Context, config db.Config, args ...string) error {
+				return nil
+			}
+
+			newEnv = tc.env
+			err := Run()
+			if tc.isErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
