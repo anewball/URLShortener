@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
-type Shortener interface {
+type Service interface {
 	Add(ctx context.Context, url string) (string, error)
 	Get(ctx context.Context, shortCode string) (string, error)
 	List(ctx context.Context, limit, offset int) ([]URLItem, error)
