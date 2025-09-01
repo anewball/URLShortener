@@ -9,15 +9,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/anewball/urlshortener/env"
 	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
 	appInstance    *app.App
 	getNewPoolFunc = db.NewPool
+	newEnv         = env.New
+	runWithFunc    = runWith
 )
 
 type Result struct {
@@ -86,12 +88,18 @@ func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	env := newEnv()
+	URL, err := env.Get("db.url")
+	if err != nil {
+		return err
+	}
+
 	config := db.Config{
-		URL:             viper.GetString("db.url"),
+		URL:             URL,
 		MaxConns:        5,
 		MinConns:        1,
 		MaxConnLifetime: time.Hour,
 	}
 
-	return runWith(ctx, config)
+	return runWithFunc(ctx, config)
 }
