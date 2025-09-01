@@ -9,6 +9,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
+var _ shortener.Service = (*mockedShortener)(nil)
+
 type mockedShortener struct {
 	addFunc    func(ctx context.Context, url string) (string, error)
 	getFunc    func(ctx context.Context, shortCode string) (string, error)
