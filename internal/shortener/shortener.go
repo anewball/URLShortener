@@ -21,6 +21,8 @@ type Service interface {
 	Delete(ctx context.Context, shortCode string) (bool, error)
 }
 
+var _ Service = (*Shortener)(nil)
+
 type Shortener struct {
 	db db.Conn
 }
