@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/anewball/urlshortener/env"
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/jackc/pgx/v5"
@@ -68,4 +69,17 @@ func (m *mockPool) Close() {
 	if m.closeFunc != nil {
 		m.closeFunc()
 	}
+}
+
+var _ env.Env = (*mockEnv)(nil)
+
+type mockEnv struct {
+	getFunc func(key string) (string, error)
+}
+
+func (m *mockEnv) Get(key string) (string, error) {
+	if m.getFunc != nil {
+		return m.getFunc(key)
+	}
+	return "", nil
 }
