@@ -7,23 +7,18 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var pool db.Conn
-
-var getDBPoolFunc = getDBPool
-
-func getDBPool(ctx context.Context) (db.Conn, error) {
-	dbCfg := db.Config{
-		URL: viper.GetString("db.url"),
-	}
-
-	return db.NewPool(ctx, dbCfg)
-}
+var (
+	appInstance    *app.App
+	getNewPoolFunc = db.NewPool
+)
 
 type Result struct {
 	Code string `json:"code"`
@@ -50,29 +45,28 @@ func NewRoot() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
 	rootCmd.PersistentFlags().String("author", "Andy Newball", "author of the URL shortener")
 
-	rootCmd.AddCommand(NewAdd(), NewDelete(), NewGet(), NewList())
+	rootCmd.AddCommand(NewAdd(appInstance), NewDelete(appInstance), NewGet(appInstance), NewList(appInstance))
 
 	return rootCmd
 }
 
-func runWith(ctx context.Context, args ...string) error {
+func runWith(ctx context.Context, config db.Config, args ...string) error {
 	log.SetOutput(os.Stderr)
 
-	p, err := getDBPoolFunc(ctx)
+	pool, err := getNewPoolFunc(ctx, config)
 	if err != nil {
 		return err
 	}
-	pool = p
 
-	if pool == nil{
+	if pool == nil {
 		return fmt.Errorf("db: nil pool")
 	}
 
+	appInstance = app.New(pool)
+
 	defer func() {
-		if pool != nil {
-			pool.Close()
-			log.Println("Database connection pool closed")
-		}
+		appInstance.Close()
+		log.Println("Database connection pool closed")
 	}()
 
 	log.Println("Connected to database successfully")
@@ -92,5 +86,12 @@ func Run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	return runWith(ctx)
+	config := db.Config{
+		URL:             viper.GetString("db.url"),
+		MaxConns:        5,
+		MinConns:        1,
+		MaxConnLifetime: time.Hour,
+	}
+
+	return runWith(ctx, config)
 }

@@ -8,25 +8,25 @@ import (
 	"io"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
 var addActionFunc = addAction // Indirection for testing
 
-func NewAdd() *cobra.Command {
+func NewAdd(app *app.App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "add <url>",
 		Short: "Save a URL to the shortener service",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			service := shortener.New(pool)
-			return addActionFunc(cmd.Context(), cmd.OutOrStdout(), service, args)
+			return addActionFunc(cmd.Context(), cmd.OutOrStdout(), app.Shortener, args)
 		},
 	}
 }
 
-func addAction(ctx context.Context, out io.Writer, service shortener.Shortener, args []string) error {
+func addAction(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

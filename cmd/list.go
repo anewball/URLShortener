@@ -7,13 +7,14 @@ import (
 	"io"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
 var listActionFunc = listAction
 
-func NewList() *cobra.Command {
+func NewList(app *app.App) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
@@ -21,8 +22,7 @@ func NewList() *cobra.Command {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
 
-			service := shortener.New(pool)
-			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout(), service)
+			return listActionFunc(cmd.Context(), limit, offset, cmd.OutOrStdout(), app.Shortener)
 		},
 	}
 
@@ -32,7 +32,7 @@ func NewList() *cobra.Command {
 	return listCmd
 }
 
-func listAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Shortener) error {
+func listAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Service) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
