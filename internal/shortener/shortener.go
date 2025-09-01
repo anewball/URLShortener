@@ -21,7 +21,7 @@ type Service interface {
 	Delete(ctx context.Context, shortCode string) (bool, error)
 }
 
-type shortener struct {
+type Shortener struct {
 	db db.Conn
 }
 
@@ -33,8 +33,8 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db db.Conn) *shortener {
-	return &shortener{
+func New(db db.Conn) *Shortener {
+	return &Shortener{
 		db: db,
 	}
 }
@@ -49,7 +49,7 @@ const (
 	maxRetries  = 5
 )
 
-func (s *shortener) Add(ctx context.Context, url string) (string, error) {
+func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
 	if err := isValidURL(url); err != nil {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
@@ -72,7 +72,7 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 	return empty, errors.New("exhausted retries")
 }
 
-func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
+func (s *Shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	if shortCode == empty {
 		return empty, fmt.Errorf("short URL cannot be empty")
 	}
@@ -89,7 +89,7 @@ func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, error) {
+func (s *Shortener) List(ctx context.Context, limit, offset int) ([]URLItem, error) {
 	rows, err := s.db.Query(ctx, ListQuery, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list URLs: %w", err)
@@ -116,7 +116,7 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	return urlItems, nil
 }
 
-func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
+func (s *Shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
 	if shortCode == empty {
 		return false, fmt.Errorf("short URL cannot be empty")
 	}
