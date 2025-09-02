@@ -1,2 +1,0 @@
-db:
-  url: postgres://anewball:password@localhost:5432/url_shortener?sslmode=disable
