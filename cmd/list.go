@@ -37,7 +37,7 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer, servi
 	defer cancel()
 
 	if limit <= 0 {
-		return fmt.Errorf("limit must be between 1 and 1000")
+		return fmt.Errorf("limit must be between 1 and 50")
 	}
 	if offset < 0 {
 		return fmt.Errorf("offset cannot be negative")
