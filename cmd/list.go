@@ -48,7 +48,7 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer, servi
 		return fmt.Errorf("failed to list URLs: %w", err)
 	}
 
-	var results []Result
+	var results []Result = make([]Result, 0, len(urlItems))
 	for _, u := range urlItems {
 		results = append(results, Result{Code: u.ShortCode, Url: u.OriginalURL})
 	}
