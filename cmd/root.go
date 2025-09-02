@@ -89,7 +89,7 @@ func Run() error {
 	defer stop()
 
 	env := newEnv()
-	URL, err := env.Get("db.url")
+	URL, err := env.Get("DB_URL")
 	if err != nil {
 		return err
 	}
