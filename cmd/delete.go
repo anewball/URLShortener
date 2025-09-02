@@ -48,6 +48,7 @@ func deleteAction(ctx context.Context, out io.Writer, service shortener.Service,
 	response.Code = code
 
 	encoder := json.NewEncoder(out)
+	encoder.SetEscapeHTML(false)
 
 	return encoder.Encode(response)
 }

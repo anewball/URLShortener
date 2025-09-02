@@ -43,6 +43,7 @@ func addAction(ctx context.Context, out io.Writer, service shortener.Service, ar
 	result := Result{Code: code, Url: arg}
 
 	encoder := json.NewEncoder(out)
+	encoder.SetEscapeHTML(false)
 
 	return encoder.Encode(result)
 }

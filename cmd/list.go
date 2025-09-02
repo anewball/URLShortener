@@ -54,6 +54,7 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer, servi
 	}
 
 	encoder := json.NewEncoder(out)
+	encoder.SetEscapeHTML(false)
 
 	return encoder.Encode(results)
 }
