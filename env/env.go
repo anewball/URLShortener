@@ -21,8 +21,8 @@ func (*env) Get(key string) (string, error) {
 	if !viper.IsSet(key) {
 		return "", fmt.Errorf("key not found: %s", key)
 	}
-	v := viper.GetString(key)
-	if strings.TrimSpace(v) == "" {
+	v := strings.TrimSpace(viper.GetString(key))
+	if v == "" {
 		return "", fmt.Errorf("key is empty: %s", key)
 	}
 	return v, nil
