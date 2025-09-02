@@ -89,30 +89,13 @@ func Run() error {
 	defer stop()
 
 	env := newEnv()
-	postgresUser, err := env.Get("POSTGRES_USER")
+	URL, err := env.Get("DB_URL")
 	if err != nil {
 		return err
 	}
-
-	postgresPassword, err := env.Get("POSTGRES_PASSWORD")
-	if err != nil {
-		return err
-	}
-
-	postgresDB, err := env.Get("POSTGRES_DB")
-	if err != nil {
-		return err
-	}
-
-	sslMode, err := env.Get("SSL_MODE")
-	if err != nil {
-		return err
-	}
-
-	uri := fmt.Sprintf("postgres://%s:%s@localhost:5432/%s?sslmode=%s", postgresUser, postgresPassword, postgresDB, sslMode)
 
 	config := db.Config{
-		URL:             uri,
+		URL:             URL,
 		MaxConns:        5,
 		MinConns:        1,
 		MaxConnLifetime: time.Hour,
