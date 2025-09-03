@@ -46,12 +46,12 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           which migrate
 
-      - name: Echo DB_URL
-        run: echo "$DB_URL"
+      - name: Print all environment variables
+        run: printenv
 
       - name: Run database migrations
         run: |
-          migrate -path internal/db/migrations -database $DB_URL -verbose up 1
+          migrate -path internal/db/migrations -database "$DB_URL" -verbose up 1
 
       - name: Run tests
         run: go test ./...
