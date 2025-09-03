@@ -48,9 +48,10 @@ jobs:
 
       - name: Load .env file
         run: |
-            set -a
-            source .env
-            set +a
+            export $(grep -v '^#' .env | xargs)
+            while IFS='=' read -r key value; do
+            echo "$key=$value" >> $GITHUB_ENV
+            done < <(grep -v '^#' .env)
 
       - name: Run database migrations
         run: migrate -path internal/db/migrations -database "$DB_URL" -verbose up 1
