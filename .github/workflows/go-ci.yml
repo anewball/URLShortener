@@ -24,7 +24,9 @@ jobs:
 
       - name: Create .env file
         run: |
-          echo "${{ secrets.DATABASE_ENV }}" > .env
+          cat << EOF > .env
+          ${{ secrets.DATABASE_ENV }}
+          EOF
         shell: bash
 
       - name: Install dependencies
