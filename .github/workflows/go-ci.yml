@@ -28,13 +28,6 @@ jobs:
           EOF
         shell: bash
 
-      - name: Load .env file
-        run: |
-            export $(grep -v '^#' .env | xargs)
-            while IFS='=' read -r key value; do
-            echo "$key=$value" >> $GITHUB_ENV
-            done < <(grep -v '^#' .env)        
-
       - name: Install dependencies
         run: go mod tidy
 
@@ -51,6 +44,13 @@ jobs:
           go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           which migrate
+
+      - name: Load .env file
+        run: |
+            export $(grep -v '^#' .env | xargs)
+            while IFS='=' read -r key value; do
+            echo "$key=$value" >> $GITHUB_ENV
+            done < <(grep -v '^#' .env)
 
       - name: Run database migrations
         run: migrate -path internal/db/migrations -database "$DB_URL" -verbose up 1
