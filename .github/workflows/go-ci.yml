@@ -50,6 +50,7 @@ jobs:
         env:
             DB_URL: ${{ secrets.DB_URL }}
         run: |
+          echo "$DB_URL"
           migrate -path internal/db/migrations -database "$DB_URL" -verbose up 1
 
       - name: Run tests
