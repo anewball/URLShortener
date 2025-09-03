@@ -48,7 +48,7 @@ jobs:
 
       - name: Run database migrations
         run: |
-          migrate -database $DB_URL -path db/migrations up
+          migrate -path internal/db/migrations -database $DB_URL -verbose up 1
 
       - name: Run tests
         run: go test ./...
