@@ -2,7 +2,6 @@ package shortener
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"net/url"
@@ -12,6 +11,7 @@ import (
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type Service interface {
@@ -148,25 +148,10 @@ func isValidURL(raw string) error {
 
 func generateCode(n int) string {
 	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
-	k := len(alphabet) // work in int
-	out := make([]byte, n)
-	var buf [1]byte
 
-	for i := range n {
-		for {
-			if _, err := rand.Read(buf[:]); err != nil {
-				panic("crypto/rand failed: " + err.Error())
-			}
-			x := int(buf[0])             // 0..255
-			threshold := 256 - (256 % k) // in int, 0..256
-			if x < threshold {           // accept only values < threshold
-				out[i] = alphabet[x%k]
-				break
-			}
-			// otherwise, draw again (rejection sampling)
-		}
-	}
-	return string(out)
+	id, _ := gonanoid.Generate(alphabet, n)
+
+	return id
 }
 
 func isUniqueViolation(err error) bool {
