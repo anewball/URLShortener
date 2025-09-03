@@ -46,6 +46,9 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           which migrate
 
+      - name: Show .env file
+        run: cat .env
+
       - name: Run database migrations
         env:
             DB_URL: ${{ secrets.DB_URL }}
