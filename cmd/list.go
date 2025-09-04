@@ -18,6 +18,9 @@ func NewList(app *app.App) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
+		Example: `
+		  	urlshortener list --offset 0 --limit 10
+  			urlshortener list -o 0 -n 10`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
@@ -36,9 +39,11 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer, servi
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if limit <= 0 {
-		return fmt.Errorf("limit must be between 1 and 50")
+	const maxLimit = 50
+	if limit <= 0 || limit > maxLimit {
+		return fmt.Errorf("limit must be between 1 and %d", maxLimit)
 	}
+
 	if offset < 0 {
 		return fmt.Errorf("offset cannot be negative")
 	}
