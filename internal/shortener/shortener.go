@@ -10,8 +10,11 @@ import (
 
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/jackc/pgx/v5"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 )
+
+var _ NanoID = (*nanoIDImpl)(nil)
+
+var nanoID NanoID = NewNanoID(alphabet)
 
 type Service interface {
 	Add(ctx context.Context, url string) (string, error)
@@ -47,19 +50,15 @@ const (
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1;"
 	empty       = ""
 	codeLen     = 7
+	alphabet    = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 )
-
-var codeGen = func(alphabet string, n int) (string, error) {
-	return gonanoid.Generate(alphabet, n)
-}
 
 func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
 	if err := isValidURL(url); err != nil {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
-	id, err := codeGen(alphabet, codeLen)
+	id, err := nanoID.Generate(codeLen)
 	if err != nil {
 		return empty, err
 	}
