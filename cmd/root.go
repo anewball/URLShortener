@@ -17,6 +17,7 @@ import (
 
 var (
 	appInstance    *app.App
+	newAppFunc     = app.New
 	getNewPoolFunc = db.NewPool
 	newEnv         = env.New
 	runWithFunc    = runWith
@@ -64,7 +65,7 @@ func runWith(ctx context.Context, config db.Config, args ...string) error {
 		return fmt.Errorf("db: nil pool")
 	}
 
-	appInstance, err = app.New(pool)
+	appInstance, err = newAppFunc(pool)
 	if err != nil {
 		return err
 	}
