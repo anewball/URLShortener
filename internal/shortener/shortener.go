@@ -14,8 +14,6 @@ import (
 
 var _ NanoID = (*nanoIDImpl)(nil)
 
-var nanoID NanoID = NewNanoID(Alphabet)
-
 type Service interface {
 	Add(ctx context.Context, url string) (string, error)
 	Get(ctx context.Context, shortCode string) (string, error)
@@ -60,7 +58,7 @@ func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	id, err := nanoID.Generate(codeLen)
+	id, err := s.gen.Generate(codeLen)
 	if err != nil {
 		return empty, err
 	}
