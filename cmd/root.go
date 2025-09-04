@@ -64,7 +64,10 @@ func runWith(ctx context.Context, config db.Config, args ...string) error {
 		return fmt.Errorf("db: nil pool")
 	}
 
-	appInstance = app.New(pool)
+	appInstance, err = app.New(pool)
+	if err != nil {
+		return err
+	}
 
 	defer func() {
 		appInstance.Close()
