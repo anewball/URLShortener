@@ -11,9 +11,10 @@ type App struct {
 }
 
 func New(conn db.Conn) *App {
+	gen := shortener.NewNanoID(shortener.Alphabet)
 	return &App{
 		Conn:      conn,
-		Shortener: shortener.New(conn),
+		Shortener: shortener.New(conn, gen),
 	}
 }
 
