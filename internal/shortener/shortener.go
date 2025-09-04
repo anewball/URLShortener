@@ -37,6 +37,9 @@ type URLItem struct {
 }
 
 func New(db db.Conn, gen NanoID) *Shortener {
+	if db == nil {
+		panic("db cannot be nil")
+	}
 	if gen == nil {
 		gen = NewNanoID(Alphabet)
 	}
