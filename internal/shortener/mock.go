@@ -211,3 +211,16 @@ func (m *mockRows) Err() error {
 func (m *mockRows) Close() {
 	m.closed = true
 }
+
+var _ NanoID = (*mockNanoID)(nil)
+
+type mockNanoID struct {
+	GenerateFunc func(n int) (string, error)
+}
+
+func (m *mockNanoID) Generate(n int) (string, error) {
+	if m.GenerateFunc != nil {
+		return m.GenerateFunc(n)
+	}
+	return "", nil
+}
