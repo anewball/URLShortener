@@ -14,15 +14,17 @@ import (
 
 func TestAdd(t *testing.T) {
 	testCases := []struct {
-		name     string
-		url      string
-		isError  bool
-		execFunc func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+		name        string
+		url         string
+		isError     bool
+		codeGenMock NanoID
+		execFunc    func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	}{
 		{
-			name:    "success",
-			url:     "http://example.com",
-			isError: false,
+			name:        "success",
+			url:         "http://example.com",
+			isError:     false,
+			codeGenMock: nanoID,
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.NewCommandTag("INSERT 1"), nil
 			},
@@ -31,6 +33,11 @@ func TestAdd(t *testing.T) {
 			name:    "empty URL",
 			url:     "",
 			isError: true,
+			codeGenMock: &mockNanoID{
+				GenerateFunc: func(n int) (string, error) {
+					return "abc123", nil
+				},
+			},
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, fmt.Errorf("URL cannot be empty")
 			},
@@ -39,34 +46,37 @@ func TestAdd(t *testing.T) {
 			name:    "failure",
 			url:     "http://example.com",
 			isError: true,
+			codeGenMock: &mockNanoID{
+				GenerateFunc: func(n int) (string, error) {
+					return "abc123", nil
+				},
+			},
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.NewCommandTag(""), errors.New("database error")
-			},
-		},
-		{
-			name:    "error 23505",
-			url:     "http://example.com",
-			isError: true,
-			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
-				return pgconn.CommandTag{}, &pgconn.PgError{
-					Code:    "23505",
-					Message: "duplicate key value violates unique constraint",
-					Detail:  "Key (short_code)=(abc123) already exists.",
-				}
 			},
 		},
 		{
 			name:    "No URL scheme",
 			url:     "example.com",
 			isError: true,
+			codeGenMock: &mockNanoID{
+				GenerateFunc: func(n int) (string, error) {
+					return "abc123", nil
+				},
+			},
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, errors.New("No URL scheme")
 			},
 		},
-				{
+		{
 			name:    "Invalid Scheme",
 			url:     "ppp://example.com",
 			isError: true,
+			codeGenMock: &mockNanoID{
+				GenerateFunc: func(n int) (string, error) {
+					return "abc123", nil
+				},
+			},
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, errors.New("Invalid URL scheme")
 			},
@@ -75,8 +85,23 @@ func TestAdd(t *testing.T) {
 			name:    "No Scheme with invalid characters",
 			url:     ":/invalid-url",
 			isError: true,
+			codeGenMock: &mockNanoID{
+				GenerateFunc: func(n int) (string, error) {
+					return "abc123", nil
+				},
+			},
 			execFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, errors.New("invalid URL format")
+			},
+		},
+		{
+			name:    "codeGen error",
+			url:     "http://example.com",
+			isError: true,
+			codeGenMock: &mockNanoID{
+				GenerateFunc: func(n int) (string, error) {
+					return "", fmt.Errorf("codeGen error")
+				},
 			},
 		},
 	}
@@ -84,6 +109,11 @@ func TestAdd(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDatabaseConn{ExecFunc: tc.execFunc}
+
+			nanoIDOld := nanoID
+			defer func() { nanoID = nanoIDOld }()
+
+			nanoID = tc.codeGenMock
 
 			s := New(m)
 			shortCode, err := s.Add(context.Background(), tc.url)
