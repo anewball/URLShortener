@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -36,7 +37,7 @@ func deleteAction(ctx context.Context, out io.Writer, service shortener.Service,
 
 	deleted, err := service.Delete(ctx, code)
 	if err != nil {
-		return fmt.Errorf("failed to delete URL: %w", err)
+		return errors.New("failed to delete URL")
 	}
 	if !deleted {
 		return fmt.Errorf("no URL found for code %q", code)

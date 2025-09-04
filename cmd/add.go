@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"time"
 
@@ -37,7 +36,7 @@ func addAction(ctx context.Context, out io.Writer, service shortener.Service, ar
 	arg := args[0]
 	code, err := service.Add(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("failed to add URL: %w", err)
+		return errors.New("failed to add URL")
 	}
 
 	result := Result{Code: code, Url: arg}

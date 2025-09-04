@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"time"
 
@@ -37,7 +36,7 @@ func getAction(ctx context.Context, out io.Writer, service shortener.Service, ar
 	arg := args[0]
 	url, err := service.Get(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("failed to retrieve original URL: %w", err)
+		return errors.New("failed to retrieve original URL")
 	}
 
 	result := Result{Code: arg, Url: url}

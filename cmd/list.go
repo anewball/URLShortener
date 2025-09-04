@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -50,7 +51,7 @@ func listAction(ctx context.Context, limit int, offset int, out io.Writer, servi
 
 	urlItems, err := service.List(ctx, limit, offset)
 	if err != nil {
-		return fmt.Errorf("failed to list URLs: %w", err)
+		return errors.New("failed to list URLs")
 	}
 
 	var results []Result = make([]Result, 0, len(urlItems))
