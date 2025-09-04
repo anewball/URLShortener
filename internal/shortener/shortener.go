@@ -26,7 +26,8 @@ type Service interface {
 var _ Service = (*Shortener)(nil)
 
 type Shortener struct {
-	db db.Conn
+	db  db.Conn
+	gen NanoID
 }
 
 type URLItem struct {
@@ -37,10 +38,11 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db db.Conn) *Shortener {
-	return &Shortener{
-		db: db,
+func New(db db.Conn, gen NanoID) *Shortener {
+	if gen == nil {
+		gen = NewNanoID(Alphabet)
 	}
+	return &Shortener{db: db, gen: gen}
 }
 
 const (
