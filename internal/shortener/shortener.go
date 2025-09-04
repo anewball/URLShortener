@@ -36,14 +36,14 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db db.Conn, gen NanoID) *Shortener {
+func New(db db.Conn, gen NanoID) (*Shortener, error) {
 	if db == nil {
-		panic("db cannot be nil")
+		return nil, fmt.Errorf("db cannot be nil")
 	}
 	if gen == nil {
 		gen = NewNanoID(Alphabet)
 	}
-	return &Shortener{db: db, gen: gen}
+	return &Shortener{db: db, gen: gen}, nil
 }
 
 const (
