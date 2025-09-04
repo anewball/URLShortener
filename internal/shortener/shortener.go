@@ -10,7 +10,6 @@ import (
 
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
@@ -48,30 +47,29 @@ const (
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1;"
 	empty       = ""
 	codeLen     = 7
-	maxRetries  = 5
 )
+
+var codeGen = func(alphabet string, n int) (string, error) {
+	return gonanoid.Generate(alphabet, n)
+}
 
 func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
 	if err := isValidURL(url); err != nil {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
 
-	for range maxRetries {
-		code := generateCode(codeLen)
-
-		_, err := s.db.Exec(ctx, AddQuery, url, code)
-		if err == nil {
-			return code, nil
-		}
-
-		if isUniqueViolation(err) {
-			continue
-		}
-
+	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+	id, err := codeGen(alphabet, codeLen)
+	if err != nil {
 		return empty, err
 	}
 
-	return empty, errors.New("exhausted retries")
+	_, err = s.db.Exec(ctx, AddQuery, url, id)
+	if err == nil {
+		return id, nil
+	}
+
+	return empty, err
 }
 
 func (s *Shortener) Get(ctx context.Context, shortCode string) (string, error) {
@@ -144,20 +142,4 @@ func isValidURL(raw string) error {
 		return errors.New("only http/https are supported")
 	}
 	return nil
-}
-
-func generateCode(n int) string {
-	const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
-
-	id, _ := gonanoid.Generate(alphabet, n)
-
-	return id
-}
-
-func isUniqueViolation(err error) bool {
-	var pqErr *pgconn.PgError
-	if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-		return true
-	}
-	return false
 }
