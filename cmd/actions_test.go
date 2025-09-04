@@ -509,13 +509,15 @@ func TestRunWith(t *testing.T) {
 		name       string
 		args       []string
 		isError    bool
+		newAppFunc func(pool db.Conn) (*app.App, error)
 		dbFunc     func(ctx context.Context, cfg db.Config) (db.Conn, error)
 		actionFunc func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error
 	}{
 		{
-			name:    "success",
-			args:    []string{"get", "Hpa3t2B"},
-			isError: false,
+			name:       "success",
+			args:       []string{"get", "Hpa3t2B"},
+			isError:    false,
+			newAppFunc: newAppFunc,
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				m := &mockPool{
 					closeFunc: func() {
@@ -529,9 +531,10 @@ func TestRunWith(t *testing.T) {
 			},
 		},
 		{
-			name:    "failed when pool is nil",
-			args:    []string{"get", "Hpa3t2B"},
-			isError: true,
+			name:       "failed when pool is nil",
+			args:       []string{"get", "Hpa3t2B"},
+			isError:    true,
+			newAppFunc: newAppFunc,
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				return nil, nil
 			},
@@ -540,9 +543,10 @@ func TestRunWith(t *testing.T) {
 			},
 		},
 		{
-			name:    "failed db",
-			args:    []string{"get", "Hpa3t2B"},
-			isError: true,
+			name:       "failed db",
+			args:       []string{"get", "Hpa3t2B"},
+			isError:    true,
+			newAppFunc: newAppFunc,
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				return nil, errors.New("error when opening db")
 			},
@@ -551,9 +555,10 @@ func TestRunWith(t *testing.T) {
 			},
 		},
 		{
-			name:    "failed with wrong command",
-			args:    []string{"get1", "Hpa3t2B"},
-			isError: true,
+			name:       "failed with wrong command",
+			args:       []string{"get1", "Hpa3t2B"},
+			isError:    true,
+			newAppFunc: newAppFunc,
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				m := &mockPool{
 					closeFunc: func() {
@@ -567,9 +572,27 @@ func TestRunWith(t *testing.T) {
 			},
 		},
 		{
-			name:    "defer db pool",
-			args:    []string{"get", "Hpa3t2B"},
-			isError: false,
+			name:       "defer db pool",
+			args:       []string{"get", "Hpa3t2B"},
+			isError:    false,
+			newAppFunc: newAppFunc,
+			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
+				m := &mockPool{
+					closeFunc: func() {
+						log.Println("DB is closed")
+					},
+				}
+				return m, nil
+			},
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+				return nil
+			},
+		},
+		{
+			name:       "app error",
+			args:       []string{"get", "Hpa3t2B"},
+			isError:    true,
+			newAppFunc: func(pool db.Conn) (*app.App, error) {return nil, errors.New("app error") },
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				m := &mockPool{
 					closeFunc: func() {
@@ -588,6 +611,10 @@ func TestRunWith(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			getNewPoolFunc = tc.dbFunc
 			getActionFunc = tc.actionFunc
+			oldNewAppFunc := newAppFunc
+			defer func() { newAppFunc = oldNewAppFunc }()
+
+			newAppFunc = tc.newAppFunc
 
 			err := runWithFunc(context.Background(), db.Config{}, tc.args...)
 
