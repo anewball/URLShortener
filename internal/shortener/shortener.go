@@ -14,7 +14,7 @@ import (
 
 var _ NanoID = (*nanoIDImpl)(nil)
 
-var nanoID NanoID = NewNanoID(alphabet)
+var nanoID NanoID = NewNanoID(Alphabet)
 
 type Service interface {
 	Add(ctx context.Context, url string) (string, error)
@@ -50,7 +50,7 @@ const (
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1;"
 	empty       = ""
 	codeLen     = 7
-	alphabet    = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
+	Alphabet    = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 )
 
 func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
