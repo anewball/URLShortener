@@ -592,7 +592,7 @@ func TestRunWith(t *testing.T) {
 			name:       "app error",
 			args:       []string{"get", "Hpa3t2B"},
 			isError:    true,
-			newAppFunc: func(pool db.Conn) (*app.App, error) {return nil, errors.New("app error") },
+			newAppFunc: func(pool db.Conn) (*app.App, error) { return nil, errors.New("app error") },
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				m := &mockPool{
 					closeFunc: func() {
@@ -646,7 +646,127 @@ func TestRun(t *testing.T) {
 			env: func() env.Env {
 				return &mockEnv{
 					getFunc: func(key string) (string, error) {
-						return "//dns:localhost:5432", nil
+						data := map[string]string{
+							"DB_URL":               "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":         "10",
+							"DB_MIN_CONNS":         "1",
+							"DB_MAX_CONN_LIFETIME": "1h",
+						}
+						return data[key], nil
+					},
+				}
+			},
+		},
+		{
+			name:  "DB_MAX_CONNS does not exist",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						data := map[string]string{
+							"DB_URL":               "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS1":        "2",
+							"DB_MIN_CONNS":         "1",
+							"DB_MAX_CONN_LIFETIME": "1h",
+						}
+						if data[key] == "" {
+							return "", errors.New("not found")
+						}
+						return data[key], nil
+					},
+				}
+			},
+		},
+		{
+			name:  "DB_MAX_CONNS not int",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						data := map[string]string{
+							"DB_URL":               "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":         "not-an-int",
+							"DB_MIN_CONNS":         "1",
+							"DB_MAX_CONN_LIFETIME": "1h",
+						}
+						return data[key], nil
+					},
+				}
+			},
+		},
+		{
+			name:  "DB_MIN_CONNS does not exist",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						data := map[string]string{
+							"DB_URL":               "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":         "2",
+							"DB_MIN_CONNS1":        "1",
+							"DB_MAX_CONN_LIFETIME": "1h",
+						}
+						if data[key] == "" {
+							return "", errors.New("not found")
+						}
+						return data[key], nil
+					},
+				}
+			},
+		},
+		{
+			name:  "DB_MIN_CONNS not int",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						data := map[string]string{
+							"DB_URL":               "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":         "1",
+							"DB_MIN_CONNS":         "not-an-int",
+							"DB_MAX_CONN_LIFETIME": "1h",
+						}
+						return data[key], nil
+					},
+				}
+			},
+		},
+		{
+			name:  "DB_MAX_CONN_LIFETIME does not exist",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						data := map[string]string{
+							"DB_URL":                "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":          "2",
+							"DB_MIN_CONNS":          "1",
+							"DB_MAX_CONN_LIFETIME1": "1h",
+						}
+						if data[key] == "" {
+							return "", errors.New("not found")
+						}
+						return data[key], nil
+					},
+				}
+			},
+		},
+		{
+			name:  "Error when Parsing DB_MAX_CONN_LIFETIME",
+			isErr: true,
+			env: func() env.Env {
+				return &mockEnv{
+					getFunc: func(key string) (string, error) {
+						data := map[string]string{
+							"DB_URL":                "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":          "2",
+							"DB_MIN_CONNS":          "1",
+							"DB_MAX_CONN_LIFETIME": "1p",
+						}
+						if data[key] == "" {
+							return "", errors.New("not found")
+						}
+						return data[key], nil
 					},
 				}
 			},
