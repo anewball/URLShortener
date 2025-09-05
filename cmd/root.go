@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -93,16 +94,44 @@ func Run() error {
 	defer stop()
 
 	env := newEnv()
-	URL, err := env.Get("DB_URL")
+	url, err := env.Get("DB_URL")
+	if err != nil {
+		return err
+	}
+
+	dbMaxConnsStr, err := env.Get("DB_MAX_CONNS")
+	if err != nil {
+		return err
+	}
+	dbMaxConns, err := strconv.Atoi(dbMaxConnsStr)
+	if err != nil{
+		return err
+	}
+
+	dbMinConnsStr, err := env.Get("DB_MIN_CONNS")
+	if err != nil {
+		return err
+	}
+	dbMinConns, err := strconv.Atoi(dbMinConnsStr)
+	if err != nil {
+		return err
+	}
+
+	dbMaxConnLifetimeStr, err := env.Get("DB_MAX_CONN_LIFETIME")
+	if err != nil {
+		return err
+	}
+
+	hour, err := time.ParseDuration(dbMaxConnLifetimeStr)
 	if err != nil {
 		return err
 	}
 
 	config := db.Config{
-		URL:             URL,
-		MaxConns:        5,
-		MinConns:        1,
-		MaxConnLifetime: time.Hour,
+		URL:             url,
+		MaxConns:        int32(dbMaxConns),
+		MinConns:        int32(dbMinConns),
+		MaxConnLifetime: hour,
 	}
 
 	return runWithFunc(ctx, config)
