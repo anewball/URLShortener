@@ -36,7 +36,7 @@ func NewList(app *app.App) *cobra.Command {
 	return listCmd
 }
 
-func listAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Service) error {
+func listAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.URLShortener) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

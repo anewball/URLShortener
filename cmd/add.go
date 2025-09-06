@@ -25,7 +25,7 @@ func NewAdd(app *app.App) *cobra.Command {
 	}
 }
 
-func addAction(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+func addAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

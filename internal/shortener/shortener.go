@@ -14,14 +14,14 @@ import (
 
 var _ NanoID = (*nanoIDImpl)(nil)
 
-type Service interface {
+type URLShortener interface {
 	Add(ctx context.Context, url string) (string, error)
 	Get(ctx context.Context, shortCode string) (string, error)
 	List(ctx context.Context, limit, offset int) ([]URLItem, error)
 	Delete(ctx context.Context, shortCode string) (bool, error)
 }
 
-var _ Service = (*Shortener)(nil)
+var _ URLShortener = (*Shortener)(nil)
 
 type Shortener struct {
 	db  db.Conn

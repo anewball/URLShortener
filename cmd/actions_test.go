@@ -26,8 +26,8 @@ func TestAddActions(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult Result
-		actionFunction func(context.Context, io.Writer, shortener.Service, []string) error
-		shor           shortener.Service
+		actionFunction func(context.Context, io.Writer, shortener.URLShortener, []string) error
+		shor           shortener.URLShortener
 	}{
 		{
 			name:           "success",
@@ -103,7 +103,7 @@ func TestNewAdd(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	addActionFunc = func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+	addActionFunc = func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -138,8 +138,8 @@ func TestGetAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult Result
-		actionFunction func(context.Context, io.Writer, shortener.Service, []string) error
-		shor           shortener.Service
+		actionFunction func(context.Context, io.Writer, shortener.URLShortener, []string) error
+		shor           shortener.URLShortener
 	}{
 		{
 			name:           "success",
@@ -215,7 +215,7 @@ func TestNewGet(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	getActionFunc = func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+	getActionFunc = func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -250,8 +250,8 @@ func TestDeleteAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult DeleteResponse
-		actionFunction func(context.Context, io.Writer, shortener.Service, []string) error
-		shor           shortener.Service
+		actionFunction func(context.Context, io.Writer, shortener.URLShortener, []string) error
+		shor           shortener.URLShortener
 	}{
 		{
 			name:           "success",
@@ -339,7 +339,7 @@ func TestNewDelete(t *testing.T) {
 	var gotOut io.Writer
 	var gotArgs []string
 
-	deleteActionFunc = func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+	deleteActionFunc = func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -375,8 +375,8 @@ func TestListAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedResult []Result
-		actionFunction func(context.Context, int, int, io.Writer, shortener.Service) error
-		shor           shortener.Service
+		actionFunction func(context.Context, int, int, io.Writer, shortener.URLShortener) error
+		shor           shortener.URLShortener
 	}{
 		{
 			name:           "success",
@@ -470,7 +470,7 @@ func TestNewList(t *testing.T) {
 
 	listCmd := NewList(&app.App{})
 
-	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, service shortener.Service) error {
+	listActionFunc = func(ctx context.Context, limit int, offset int, out io.Writer, service shortener.URLShortener) error {
 		called = true
 		gotCtx = ctx
 		gotOut = out
@@ -511,7 +511,7 @@ func TestRunWith(t *testing.T) {
 		isError    bool
 		newAppFunc func(pool db.Conn) (*app.App, error)
 		dbFunc     func(ctx context.Context, cfg db.Config) (db.Conn, error)
-		actionFunc func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error
+		actionFunc func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error
 	}{
 		{
 			name:       "success",
@@ -526,7 +526,7 @@ func TestRunWith(t *testing.T) {
 				}
 				return m, nil
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 				return nil
 			},
 		},
@@ -538,7 +538,7 @@ func TestRunWith(t *testing.T) {
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				return nil, nil
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 				return nil
 			},
 		},
@@ -550,7 +550,7 @@ func TestRunWith(t *testing.T) {
 			dbFunc: func(ctx context.Context, cfg db.Config) (db.Conn, error) {
 				return nil, errors.New("error when opening db")
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 				return nil
 			},
 		},
@@ -567,7 +567,7 @@ func TestRunWith(t *testing.T) {
 				}
 				return m, nil
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 				return nil
 			},
 		},
@@ -584,7 +584,7 @@ func TestRunWith(t *testing.T) {
 				}
 				return m, nil
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 				return nil
 			},
 		},
@@ -601,7 +601,7 @@ func TestRunWith(t *testing.T) {
 				}
 				return m, nil
 			},
-			actionFunc: func(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+			actionFunc: func(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 				return nil
 			},
 		},
@@ -758,9 +758,9 @@ func TestRun(t *testing.T) {
 				return &mockEnv{
 					getFunc: func(key string) (string, error) {
 						data := map[string]string{
-							"DB_URL":                "postgres://user:password@localhost:5432/your_db?sslmode=disable",
-							"DB_MAX_CONNS":          "2",
-							"DB_MIN_CONNS":          "1",
+							"DB_URL":               "postgres://user:password@localhost:5432/your_db?sslmode=disable",
+							"DB_MAX_CONNS":         "2",
+							"DB_MIN_CONNS":         "1",
 							"DB_MAX_CONN_LIFETIME": "1p",
 						}
 						if data[key] == "" {

@@ -25,7 +25,7 @@ func NewGet(app *app.App) *cobra.Command {
 	}
 }
 
-func getAction(ctx context.Context, out io.Writer, service shortener.Service, args []string) error {
+func getAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

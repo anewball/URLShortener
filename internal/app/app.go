@@ -7,7 +7,7 @@ import (
 
 type App struct {
 	Conn      db.Conn
-	Shortener shortener.Service
+	Shortener shortener.URLShortener
 }
 
 func New(conn db.Conn) (*App, error) {
