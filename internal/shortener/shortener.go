@@ -21,9 +21,9 @@ type URLShortener interface {
 	Delete(ctx context.Context, shortCode string) (bool, error)
 }
 
-var _ URLShortener = (*Shortener)(nil)
+var _ URLShortener = (*shortener)(nil)
 
-type Shortener struct {
+type shortener struct {
 	db  db.Conn
 	gen NanoID
 }
@@ -36,14 +36,14 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db db.Conn, gen NanoID) (*Shortener, error) {
+func New(db db.Conn, gen NanoID) (*shortener, error) {
 	if db == nil {
 		return nil, fmt.Errorf("db cannot be nil")
 	}
 	if gen == nil {
 		gen = NewNanoID(Alphabet)
 	}
-	return &Shortener{db: db, gen: gen}, nil
+	return &shortener{db: db, gen: gen}, nil
 }
 
 const (
@@ -56,7 +56,7 @@ const (
 	Alphabet    = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 )
 
-func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
+func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 	if err := isValidURL(url); err != nil {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
@@ -74,7 +74,7 @@ func (s *Shortener) Add(ctx context.Context, url string) (string, error) {
 	return empty, err
 }
 
-func (s *Shortener) Get(ctx context.Context, shortCode string) (string, error) {
+func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	if shortCode == empty {
 		return empty, fmt.Errorf("short URL cannot be empty")
 	}
@@ -91,7 +91,7 @@ func (s *Shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	return originalURL, nil
 }
 
-func (s *Shortener) List(ctx context.Context, limit, offset int) ([]URLItem, error) {
+func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, error) {
 	rows, err := s.db.Query(ctx, ListQuery, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list URLs: %w", err)
@@ -118,7 +118,7 @@ func (s *Shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	return urlItems, nil
 }
 
-func (s *Shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
+func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
 	if shortCode == empty {
 		return false, fmt.Errorf("short URL cannot be empty")
 	}
