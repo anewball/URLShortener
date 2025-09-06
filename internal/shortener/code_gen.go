@@ -6,14 +6,16 @@ type NanoID interface {
 	Generate(n int) (string, error)
 }
 
-type nanoIDImpl struct {
+type nanoID struct {
 	alphabet string
 }
 
+var _ NanoID = (*nanoID)(nil)
+
 func NewNanoID(alphabet string) NanoID {
-	return &nanoIDImpl{alphabet: alphabet}
+	return &nanoID{alphabet: alphabet}
 }
 
-func (c *nanoIDImpl) Generate(n int) (string, error) {
+func (c *nanoID) Generate(n int) (string, error) {
 	return gonanoid.Generate(c.alphabet, n)
 }
