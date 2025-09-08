@@ -25,6 +25,7 @@ var (
 	ErrEmptyURL    = errors.New("URL cannot be empty")
 	ErrGenerate    = errors.New("failed to generate short URL")
 	ErrExec        = errors.New("failed to execute database command")
+	ErrIsValidURL  = errors.New("invalid URL")
 )
 
 type URLShortener interface {
@@ -71,12 +72,12 @@ const (
 
 func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 	if err := isValidURL(rawURL); err != nil {
-		return empty, fmt.Errorf("invalid URL: %w", err)
+		return empty, fmt.Errorf("%w: %v", ErrIsValidURL, err)
 	}
 
 	id, err := s.gen.Generate(codeLen)
 	if err != nil {
-		return empty, ErrGenerate
+		return empty, fmt.Errorf("%w: %v", ErrGenerate, err)
 	}
 
 	_, err = s.db.Exec(ctx, AddQuery, rawURL, id)
