@@ -23,6 +23,7 @@ var (
 	ErrTooLong     = fmt.Errorf("URL exceeds maximum length of %d characters", maxURLLength)
 	ErrParse       = errors.New("URL could not be parsed")
 	ErrEmptyURL    = errors.New("URL cannot be empty")
+	ErrGenerate    = errors.New("failed to generate short URL")
 )
 
 type URLShortener interface {
@@ -74,7 +75,7 @@ func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 
 	id, err := s.gen.Generate(codeLen)
 	if err != nil {
-		return empty, err
+		return empty, ErrGenerate
 	}
 
 	_, err = s.db.Exec(ctx, AddQuery, rawURL, id)
