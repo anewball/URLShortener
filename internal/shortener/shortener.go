@@ -12,6 +12,11 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var (
+	ErrNotFound  = errors.New("short URL not found")
+	ErrEmptyCode = errors.New("short URL cannot be empty")
+)
+
 type URLShortener interface {
 	Add(ctx context.Context, url string) (string, error)
 	Get(ctx context.Context, shortCode string) (string, error)
@@ -74,14 +79,14 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 
 func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	if shortCode == empty {
-		return empty, fmt.Errorf("short URL cannot be empty")
+		return empty, ErrEmptyCode
 	}
 
 	var originalURL string
 	err := s.db.QueryRow(ctx, GetQuery, shortCode).Scan(&originalURL)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return empty, fmt.Errorf("short URL not found")
+			return empty, ErrNotFound
 		}
 		return empty, fmt.Errorf("failed to retrieve URL: %w", err)
 	}
