@@ -17,6 +17,7 @@ const maxURLLength = 2048
 var (
 	ErrNotFound  = errors.New("short URL not found")
 	ErrEmptyCode = errors.New("short URL cannot be empty")
+	ErrScheme    = errors.New("URL must include scheme (http/https)")
 )
 
 type URLShortener interface {
@@ -148,12 +149,12 @@ func isValidURL(rawURL string) error {
 	}
 
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return errors.New("only http/https are supported")
+		return ErrScheme
 	}
 
 	if len(s) > maxURLLength {
 		return fmt.Errorf("URL too long")
 	}
-	
+
 	return nil
 }
