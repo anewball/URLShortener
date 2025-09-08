@@ -101,44 +101,44 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	}
 	defer rows.Close()
 
-	var urlItems []URLItem
+	items := make([]URLItem, 0, limit)
 	for rows.Next() {
-		var urlItem URLItem
-		if err := rows.Scan(&urlItem.ID, &urlItem.OriginalURL, &urlItem.ShortCode, &urlItem.CreatedAt, &urlItem.ExpiresAt); err != nil {
+		var item URLItem
+		if err := rows.Scan(&item.ID, &item.OriginalURL, &item.ShortCode, &item.CreatedAt, &item.ExpiresAt); err != nil {
 			return nil, fmt.Errorf("failed to scan URL: %w", err)
 		}
-		urlItems = append(urlItems, urlItem)
+		items = append(items, item)
 	}
 
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating over rows: %w", err)
 	}
 
-	if len(urlItems) == 0 {
-		return []URLItem{}, errors.New("no URLs found")
-	}
-
-	return urlItems, nil
+	return items, nil
 }
 
 func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
 	if shortCode == empty {
-		return false, fmt.Errorf("short URL cannot be empty")
+		return false, ErrEmptyCode
 	}
 
 	cmdTag, err := s.db.Exec(ctx, DeleteQuery, shortCode)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("failed to delete: %w", err)
 	}
 
-	return cmdTag.RowsAffected() > 0, nil
+	if cmdTag.RowsAffected() == 0 {
+		return false, ErrNotFound
+	}
+
+	return true, nil
 }
 
-func isValidURL(raw string) error {
-	if raw == empty {
-		return fmt.Errorf("URL cannot be empty")
+func isValidURL(rawURL string) error {
+	if rawURL == empty {
+		return ErrEmptyCode
 	}
-	s := strings.TrimSpace(raw)
+	s := strings.TrimSpace(rawURL)
 	u, err := url.Parse(s)
 	if err != nil || u.Scheme == empty || u.Host == empty {
 		return errors.New("URL must include scheme (http/https) and host")
