@@ -12,6 +12,8 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+const maxURLLength = 2048
+
 var (
 	ErrNotFound  = errors.New("short URL not found")
 	ErrEmptyCode = errors.New("short URL cannot be empty")
@@ -138,13 +140,20 @@ func isValidURL(rawURL string) error {
 	if rawURL == empty {
 		return ErrEmptyCode
 	}
+
 	s := strings.TrimSpace(rawURL)
 	u, err := url.Parse(s)
 	if err != nil || u.Scheme == empty || u.Host == empty {
 		return errors.New("URL must include scheme (http/https) and host")
 	}
+
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return errors.New("only http/https are supported")
 	}
+
+	if len(s) > maxURLLength {
+		return fmt.Errorf("URL too long")
+	}
+	
 	return nil
 }
