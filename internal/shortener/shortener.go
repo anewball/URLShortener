@@ -59,8 +59,8 @@ const (
 	Alphabet    = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
 )
 
-func (s *shortener) Add(ctx context.Context, url string) (string, error) {
-	if err := isValidURL(url); err != nil {
+func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
+	if err := isValidURL(rawURL); err != nil {
 		return empty, fmt.Errorf("invalid URL: %w", err)
 	}
 
@@ -69,7 +69,7 @@ func (s *shortener) Add(ctx context.Context, url string) (string, error) {
 		return empty, err
 	}
 
-	_, err = s.db.Exec(ctx, AddQuery, url, id)
+	_, err = s.db.Exec(ctx, AddQuery, rawURL, id)
 	if err == nil {
 		return id, nil
 	}
