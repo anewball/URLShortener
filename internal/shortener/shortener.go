@@ -15,9 +15,14 @@ import (
 const maxURLLength = 2048
 
 var (
-	ErrNotFound  = errors.New("short URL not found")
-	ErrEmptyCode = errors.New("short URL cannot be empty")
-	ErrScheme    = errors.New("URL must include scheme (http/https)")
+	ErrNotFound    = errors.New("short URL not found")
+	ErrEmptyCode   = errors.New("short URL cannot be empty")
+	ErrScheme      = errors.New("only http/https are supported")
+	ErrEmptyScheme = errors.New("URL scheme cannot be empty")
+	ErrEmptyHost   = errors.New("URL host cannot be empty")
+	ErrTooLong     = fmt.Errorf("URL exceeds maximum length of %d characters", maxURLLength)
+	ErrParse       = errors.New("URL could not be parsed")
+	ErrEmptyURL    = errors.New("URL cannot be empty")
 )
 
 type URLShortener interface {
@@ -139,21 +144,30 @@ func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) 
 
 func isValidURL(rawURL string) error {
 	if rawURL == empty {
-		return ErrEmptyCode
+		return ErrEmptyURL
 	}
 
 	s := strings.TrimSpace(rawURL)
-	u, err := url.Parse(s)
-	if err != nil || u.Scheme == empty || u.Host == empty {
-		return errors.New("URL must include scheme (http/https) and host")
-	}
-
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return ErrScheme
-	}
-
 	if len(s) > maxURLLength {
-		return fmt.Errorf("URL too long")
+		return ErrTooLong
+	}
+
+	u, err := url.Parse(s)
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrParse, err)
+	}
+
+	if u.Scheme == empty {
+		return ErrEmptyScheme
+	}
+
+	if u.Host == empty {
+		return ErrEmptyHost
+	}
+
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return ErrScheme
 	}
 
 	return nil
