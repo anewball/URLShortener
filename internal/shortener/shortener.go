@@ -78,11 +78,11 @@ func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 	}
 
 	_, err = s.db.Exec(ctx, AddQuery, rawURL, id)
-	if err == nil {
-		return id, nil
+	if err != nil {
+		return empty, err
 	}
 
-	return empty, err
+	return id, nil
 }
 
 func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
