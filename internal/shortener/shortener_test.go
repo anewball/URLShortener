@@ -220,9 +220,8 @@ func TestList(t *testing.T) {
 		conn          db.Conn
 	}{
 		{
-			name:        "success",
-			limit:       10,
-			offset:      0,
+			name:  "success",
+			limit: 10, offset: 0,
 			expectedErr: nil,
 			expectedItems: []URLItem{
 				{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
@@ -242,9 +241,8 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:        "no URLs found",
-			limit:       10,
-			offset:      0,
+			name:  "rows error",
+			limit: 10, offset: 0,
 			expectedErr: ErrQuery,
 			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
@@ -259,9 +257,8 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:        "query error",
-			limit:       10,
-			offset:      0,
+			name:  "query error",
+			limit: 10, offset: 0,
 			expectedErr: ErrQuery,
 			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
@@ -271,9 +268,8 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:        "scan error",
-			limit:       10,
-			offset:      0,
+			name:  "scan error",
+			limit: 10, offset: 0,
 			expectedErr: ErrScan,
 			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
@@ -285,6 +281,29 @@ func TestList(t *testing.T) {
 						},
 						scanErrPos: 1, // Simulate scan error on second row
 					}, nil
+				},
+			},
+		},
+		{
+			name:  "empty results",
+			limit: 10, offset: 0,
+			expectedErr:   nil,
+			gen:           &mockNanoID{},
+			expectedItems: []URLItem{},
+			conn: &mockDatabaseConn{
+				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+					return &mockRows{data: [][]any{}}, nil
+				},
+			},
+		},
+		{
+			name:  "rows iteration error",
+			limit: 10, offset: 0,
+			expectedErr: ErrQuery,
+			gen:         &mockNanoID{},
+			conn: &mockDatabaseConn{
+				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+					return &mockRows{data: [][]any{}, err: pgx.ErrTxClosed}, nil
 				},
 			},
 		},
@@ -377,18 +396,28 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 		db          db.Conn
 		gen         NanoID
 		expectedErr error
+		isErrNil    bool
 	}{
 		{
-			name:        "Error when db is nil",
+			name:        "success",
+			db:          &mockDatabaseConn{},
+			gen:         &mockNanoID{},
+			expectedErr: nil,
+			isErrNil:    true,
+		},
+		{
+			name:        "error when db is nil",
 			db:          nil,
 			gen:         &mockNanoID{},
 			expectedErr: ErrDBNil,
+			isErrNil:    false,
 		},
 		{
-			name:        "Error when gen is nil",
+			name:        "error when gen is nil",
 			db:          &mockDatabaseConn{},
 			gen:         nil,
 			expectedErr: ErrNanoIDNil,
+			isErrNil:    false,
 		},
 	}
 
@@ -396,8 +425,13 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, actualErr := New(tc.db, tc.gen)
 
-			assert.ErrorIs(t, actualErr, tc.expectedErr)
-			require.Nil(t, svc)
+			if tc.isErrNil {
+				require.NotNil(t, svc)
+				require.NoError(t, actualErr)
+			} else {
+				require.Nil(t, svc)
+				assert.ErrorIs(t, actualErr, tc.expectedErr)
+			}
 		})
 	}
 }
