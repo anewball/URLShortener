@@ -17,52 +17,52 @@ import (
 
 func TestIsValidURL(t *testing.T) {
 	testCases := []struct {
-		name     string
-		url      string
-		expected error
+		name        string
+		url         string
+		expectedErr error
 	}{
 		{
-			name:     "valid URL",
-			url:      "http://example.com",
-			expected: nil,
+			name:        "valid URL",
+			url:         "http://example.com",
+			expectedErr: nil,
 		},
 		{
-			name:     "empty URL",
-			url:      "",
-			expected: ErrEmptyURL,
+			name:        "empty URL",
+			url:         "",
+			expectedErr: ErrEmptyURL,
 		},
 		{
-			name:     "too long URL",
-			url:      strings.Repeat("a", 2049),
-			expected: ErrTooLong,
+			name:        "too long URL",
+			url:         strings.Repeat("a", 2049),
+			expectedErr: ErrTooLong,
 		},
 		{
-			name:     "invalid URL",
-			url:      ":///invalid-url.com",
-			expected: ErrParse,
+			name:        "invalid URL",
+			url:         ":///invalid-url.com",
+			expectedErr: ErrParse,
 		},
 		{
-			name:     "no scheme",
-			url:      "example.com",
-			expected: ErrEmptyScheme,
+			name:        "no scheme",
+			url:         "example.com",
+			expectedErr: ErrEmptyScheme,
 		},
 		{
-			name:     "no host",
-			url:      "http://",
-			expected: ErrEmptyHost,
+			name:        "no host",
+			url:         "http://",
+			expectedErr: ErrEmptyHost,
 		},
 		{
-			name:     "invalid scheme",
-			url:      "ftp://example.com",
-			expected: ErrScheme,
+			name:        "invalid scheme",
+			url:         "ftp://example.com",
+			expectedErr: ErrScheme,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := isValidURL(tc.url)
+			actualErr := isValidURL(tc.url)
 
-			assert.ErrorIs(t, err, tc.expected)
+			assert.ErrorIs(t, actualErr, tc.expectedErr)
 		})
 	}
 }
@@ -134,9 +134,9 @@ func TestAdd(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			service, _ := New(tc.conn, tc.codeGenMock)
 
-			shortCode, err := service.Add(context.Background(), tc.url)
+			actualShortCode, err := service.Add(context.Background(), tc.url)
 
-			require.Equal(t, tc.expectedCode, shortCode)
+			require.Equal(t, tc.expectedCode, actualShortCode)
 			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
@@ -190,9 +190,9 @@ func TestGet(t *testing.T) {
 			m := &mockDatabaseConn{QueryRowFunc: tc.queryRowFunc}
 
 			service, _ := New(m, nil)
-			rawURL, err := service.Get(context.Background(), tc.shortCode)
+			actualRawURL, err := service.Get(context.Background(), tc.shortCode)
 
-			require.Equal(t, tc.expectedRawURL, rawURL)
+			require.Equal(t, tc.expectedRawURL, actualRawURL)
 			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
@@ -281,41 +281,46 @@ func TestList(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	testCases := []struct {
-		name      string
-		shortCode string
-		isError   bool
-		execFunc  func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+		name            string
+		shortCode       string
+		expectedErr     error
+		expectedDeleted bool
+		execFunc        func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
 	}{
 		{
-			name:      "success",
-			shortCode: "xK9fA3T8bfqHXEIhYkoU0M",
-			isError:   false,
+			name:            "success",
+			shortCode:       "xK9fA3T8bfqHXEIhYkoU0M",
+			expectedDeleted: true,
+			expectedErr:     nil,
+			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+				return pgconn.NewCommandTag("DELETE 1"), nil
+			},
+		},
+		{
+			name:            "short code empty",
+			shortCode:       "",
+			expectedDeleted: false,
+			expectedErr:     ErrEmptyCode,
 			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, nil
 			},
 		},
 		{
-			name:      "short code empty",
-			shortCode: "",
-			isError:   true,
-			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-				return pgconn.CommandTag{}, nil
-			},
-		},
-		{
-			name:      "not found",
-			shortCode: "nonexistent",
-			isError:   true,
+			name:            "not found",
+			shortCode:       "nonexistent",
+			expectedDeleted: false,
+			expectedErr:     ErrExec,
 			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 				return pgconn.CommandTag{}, pgx.ErrNoRows
 			},
 		},
 		{
-			name:      "err tx closed",
-			shortCode: "nonexistent",
-			isError:   true,
+			name:            "zero rows affected",
+			shortCode:       "xK9fA3T8bfqHXEIhYkoU0M",
+			expectedDeleted: false,
+			expectedErr:     ErrNotFound,
 			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-				return pgconn.CommandTag{}, pgx.ErrTxClosed
+				return pgconn.NewCommandTag("DELETE 0"), nil
 			},
 		},
 	}
@@ -325,13 +330,10 @@ func TestDelete(t *testing.T) {
 			m := &mockDatabaseConn{ExecFunc: tc.execFunc}
 
 			service, _ := New(m, &mockNanoID{})
-			_, err := service.Delete(context.Background(), tc.shortCode)
+			actualDeleted, err := service.Delete(context.Background(), tc.shortCode)
 
-			if tc.isError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-			}
+			require.Equal(t, tc.expectedDeleted, actualDeleted)
+			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
 }
