@@ -2,7 +2,6 @@ package shortener
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -18,30 +17,19 @@ type mockDatabaseConn struct {
 }
 
 func (m *mockDatabaseConn) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
-	if m.QueryRowFunc != nil {
-		return m.QueryRowFunc(ctx, sql, args...)
-	}
-	return nil
+	return m.QueryRowFunc(ctx, sql, args...)
 }
 
 func (m *mockDatabaseConn) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
-	if m.ExecFunc != nil {
-		return m.ExecFunc(ctx, sql, arguments...)
-	}
-	return pgconn.CommandTag{}, nil
+	return m.ExecFunc(ctx, sql, arguments...)
 }
 
 func (m *mockDatabaseConn) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-	if m.QueryFunc != nil {
-		return m.QueryFunc(ctx, sql, args...)
-	}
-	return nil, nil
+	return m.QueryFunc(ctx, sql, args...)
 }
 
 func (m *mockDatabaseConn) Close() {
-	if m.CloseFunc != nil {
-		m.CloseFunc()
-	}
+	m.CloseFunc()
 }
 
 // mockRow is a mock implementation of pgx.Row.
@@ -65,10 +53,6 @@ func (m *mockRow) Scan(dest ...any) error {
 		}
 	}
 	return nil
-}
-
-func (m *mockRow) FielDescription() []pgconn.FieldDescription {
-	return nil // Not needed for this test
 }
 
 type mockRows struct {
@@ -113,17 +97,6 @@ func (m *mockRows) Next() bool {
 }
 
 func (m *mockRows) Scan(dest ...any) error {
-	if m.closed {
-		return errors.New("rows are closed")
-	}
-	if m.index-1 >= len(m.data) {
-		return errors.New("no row data available")
-	}
-	// Allow targeted injection of a scan error for testing.
-	if m.scanErrPos > 0 && m.index-1 == m.scanErrPos {
-		return errors.New("simulated scan error")
-	}
-
 	row := m.data[m.index-1]
 	if len(dest) > len(row) {
 		return fmt.Errorf("scan: destination count %d exceeds available columns %d", len(dest), len(row))
@@ -170,8 +143,5 @@ type mockNanoID struct {
 }
 
 func (m *mockNanoID) Generate(n int) (string, error) {
-	if m.GenerateFunc != nil {
-		return m.GenerateFunc(n)
-	}
-	return "", nil
+	return m.GenerateFunc(n)
 }
