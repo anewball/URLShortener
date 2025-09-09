@@ -216,7 +216,8 @@ func TestList(t *testing.T) {
 		offset       int
 		expectedErr  error
 		expectedData []URLItem
-		queryFunc    func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+		codeGenMock  NanoID
+		conn         db.Conn
 	}{
 		{
 			name:        "success",
@@ -227,14 +228,17 @@ func TestList(t *testing.T) {
 				{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
 				{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
 			},
-			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-				return &mockRows{
-					data: [][]any{
-						{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
-						{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
-					},
-					index: 0,
-				}, nil
+			codeGenMock: &mockNanoID{},
+			conn: &mockDatabaseConn{
+				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+					return &mockRows{
+						data: [][]any{
+							{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
+							{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
+						},
+						index: 0,
+					}, nil
+				},
 			},
 		},
 		{
@@ -242,13 +246,16 @@ func TestList(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			expectedErr: ErrQuery,
-			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-				return &mockRows{
-					data:   [][]any{},
-					index:  0,
-					err:    pgx.ErrNoRows,
-					closed: true,
-				}, nil
+			codeGenMock: &mockNanoID{},
+			conn: &mockDatabaseConn{
+				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+					return &mockRows{
+						data:   [][]any{},
+						index:  0,
+						err:    pgx.ErrNoRows,
+						closed: true,
+					}, nil
+				},
 			},
 		},
 		{
@@ -256,8 +263,11 @@ func TestList(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			expectedErr: ErrQuery,
-			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-				return nil, fmt.Errorf("query error")
+			codeGenMock: &mockNanoID{},
+			conn: &mockDatabaseConn{
+				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+					return nil, fmt.Errorf("query error")
+				},
 			},
 		},
 		{
@@ -265,23 +275,24 @@ func TestList(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			expectedErr: ErrScan,
-			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-				return &mockRows{
-					data: [][]any{
-						{"http://example.com/1"},
-						{"http://example.com/2"},
-					},
-					scanErrPos: 1, // Simulate scan error on second row
-				}, nil
+			codeGenMock: &mockNanoID{},
+			conn: &mockDatabaseConn{
+				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+					return &mockRows{
+						data: [][]any{
+							{"http://example.com/1"},
+							{"http://example.com/2"},
+						},
+						scanErrPos: 1, // Simulate scan error on second row
+					}, nil
+				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := &mockDatabaseConn{QueryFunc: tc.queryFunc}
-
-			service, _ := New(m, &mockNanoID{})
+			service, _ := New(tc.conn, tc.codeGenMock)
 			actualData, err := service.List(context.Background(), tc.limit, tc.offset)
 
 			require.Equal(t, tc.expectedData, actualData)
