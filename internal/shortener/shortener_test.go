@@ -144,17 +144,17 @@ func TestAdd(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	testCases := []struct {
-		name         string
-		shortCode    string
-		expectedRawURL       string
-		expectedErr  error
-		queryRowFunc func(ctx context.Context, sql string, args ...any) pgx.Row
+		name           string
+		shortCode      string
+		expectedRawURL string
+		expectedErr    error
+		queryRowFunc   func(ctx context.Context, sql string, args ...any) pgx.Row
 	}{
 		{
-			name:        "success",
-			shortCode:   "xK9fA3T8bfqHXEIhYkoU0M",
-			expectedErr: nil,
-			expectedRawURL:      "http://example.com",
+			name:           "success",
+			shortCode:      "xK9fA3T8bfqHXEIhYkoU0M",
+			expectedErr:    nil,
+			expectedRawURL: "http://example.com",
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{result: []any{"http://example.com"}}
 			},
@@ -203,15 +203,15 @@ func TestList(t *testing.T) {
 		name         string
 		limit        int
 		offset       int
-		isError      bool
+		expectedErr  error
 		expectedData []URLItem
 		queryFunc    func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 	}{
 		{
-			name:    "success",
-			limit:   10,
-			offset:  0,
-			isError: false,
+			name:        "success",
+			limit:       10,
+			offset:      0,
+			expectedErr: nil,
 			expectedData: []URLItem{
 				{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
 				{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
@@ -227,10 +227,10 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:    "no URLs found",
-			limit:   10,
-			offset:  0,
-			isError: true,
+			name:        "no URLs found",
+			limit:       10,
+			offset:      0,
+			expectedErr: ErrRowNotFound,
 			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 				return &mockRows{
 					data:   [][]any{},
@@ -241,19 +241,19 @@ func TestList(t *testing.T) {
 			},
 		},
 		{
-			name:    "query error",
-			limit:   10,
-			offset:  0,
-			isError: true,
+			name:        "query error",
+			limit:       10,
+			offset:      0,
+			expectedErr: ErrQuery,
 			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 				return nil, fmt.Errorf("query error")
 			},
 		},
 		{
-			name:    "scan error",
-			limit:   10,
-			offset:  0,
-			isError: true,
+			name:        "scan error",
+			limit:       10,
+			offset:      0,
+			expectedErr: ErrScan,
 			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 				return &mockRows{
 					data: [][]any{
@@ -261,18 +261,6 @@ func TestList(t *testing.T) {
 						{"http://example.com/2"},
 					},
 					scanErrPos: 1, // Simulate scan error on second row
-				}, nil
-			},
-		},
-		{
-			name:    "URLs empty",
-			limit:   10,
-			offset:  0,
-			isError: true,
-			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
-				return &mockRows{
-					index:  0,
-					closed: true,
 				}, nil
 			},
 		},
@@ -285,13 +273,8 @@ func TestList(t *testing.T) {
 			service, _ := New(m, &mockNanoID{})
 			actualData, err := service.List(context.Background(), tc.limit, tc.offset)
 
-			if tc.isError {
-				require.Error(t, err)
-				require.Empty(t, actualData)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tc.expectedData, actualData)
-			}
+			require.Equal(t, tc.expectedData, actualData)
+			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
 }
