@@ -146,39 +146,39 @@ func TestGet(t *testing.T) {
 	testCases := []struct {
 		name         string
 		shortCode    string
-		isError      bool
-		url          string
+		expectedRawURL       string
+		expectedErr  error
 		queryRowFunc func(ctx context.Context, sql string, args ...any) pgx.Row
 	}{
 		{
-			name:      "success",
-			shortCode: "xK9fA3T8bfqHXEIhYkoU0M",
-			isError:   false,
-			url:       "http://example.com",
+			name:        "success",
+			shortCode:   "xK9fA3T8bfqHXEIhYkoU0M",
+			expectedErr: nil,
+			expectedRawURL:      "http://example.com",
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{result: []any{"http://example.com"}}
 			},
 		},
 		{
-			name:      "empty short code",
-			shortCode: "",
-			isError:   true,
+			name:        "empty short code",
+			shortCode:   "",
+			expectedErr: ErrEmptyCode,
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: fmt.Errorf("short URL cannot be empty")}
 			},
 		},
 		{
-			name:      "not found",
-			shortCode: "nonexistent",
-			isError:   true,
+			name:        "not found",
+			shortCode:   "nonexistent",
+			expectedErr: ErrNotFound,
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: pgx.ErrNoRows}
 			},
 		},
 		{
-			name:      "err tx closed",
-			shortCode: "nonexistent",
-			isError:   true,
+			name:        "err tx closed",
+			shortCode:   "nonexistent",
+			expectedErr: ErrNotFound,
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: pgx.ErrTxClosed}
 			},
@@ -190,15 +190,10 @@ func TestGet(t *testing.T) {
 			m := &mockDatabaseConn{QueryRowFunc: tc.queryRowFunc}
 
 			service, _ := New(m, nil)
-			url, err := service.Get(context.Background(), tc.shortCode)
+			rawURL, err := service.Get(context.Background(), tc.shortCode)
 
-			if tc.isError {
-				require.Error(t, err)
-				require.Empty(t, url)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tc.url, url)
-			}
+			require.Equal(t, tc.expectedRawURL, rawURL)
+			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
 }
