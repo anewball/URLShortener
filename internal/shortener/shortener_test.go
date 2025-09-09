@@ -69,17 +69,17 @@ func TestIsValidURL(t *testing.T) {
 
 func TestAdd(t *testing.T) {
 	testCases := []struct {
-		name         string
-		rawURL       string
-		gen          NanoID
-		conn         db.Conn
-		expectedErr  error
+		name              string
+		rawURL            string
+		gen               NanoID
+		conn              db.Conn
+		expectedErr       error
 		expectedShortCode string
 	}{
 		{
-			name:         "success",
-			rawURL:       "http://example.com",
-			expectedErr:  nil,
+			name:              "success",
+			rawURL:            "http://example.com",
+			expectedErr:       nil,
 			expectedShortCode: "abc123",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
@@ -93,17 +93,17 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		{
-			name:         "empty URL",
-			rawURL:       "",
-			expectedErr:  ErrIsValidURL,
+			name:              "empty URL",
+			rawURL:            "",
+			expectedErr:       ErrIsValidURL,
 			expectedShortCode: "",
-			gen:          &mockNanoID{},
-			conn:         &mockDatabaseConn{},
+			gen:               &mockNanoID{},
+			conn:              &mockDatabaseConn{},
 		},
 		{
-			name:         "codeGen error",
-			rawURL:       "http://example.com",
-			expectedErr:  ErrGenerate,
+			name:              "codeGen error",
+			rawURL:            "http://example.com",
+			expectedErr:       ErrGenerate,
 			expectedShortCode: "",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
@@ -113,9 +113,9 @@ func TestAdd(t *testing.T) {
 			conn: &mockDatabaseConn{},
 		},
 		{
-			name:         "exec failure",
-			rawURL:       "http://example.com",
-			expectedErr:  ErrExec,
+			name:              "exec failure",
+			rawURL:            "http://example.com",
+			expectedErr:       ErrExec,
 			expectedShortCode: "",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
@@ -372,10 +372,32 @@ func TestDelete(t *testing.T) {
 }
 
 func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
-	t.Parallel()
+	testCases := []struct {
+		name        string
+		db          db.Conn
+		gen         NanoID
+		expectedErr error
+	}{
+		{
+			name:        "Error when db is nil",
+			db:          nil,
+			gen:         &mockNanoID{},
+			expectedErr: ErrDBNil,
+		},
+		{
+			name:        "Error when gen is nil",
+			db:          &mockDatabaseConn{},
+			gen:         nil,
+			expectedErr: ErrNanoIDNil,
+		},
+	}
 
-	svc, err := New(nil, nil)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			svc, actualErr := New(tc.db, tc.gen)
 
-	require.Nil(t, svc)
-	require.Error(t, err)
+			assert.ErrorIs(t, actualErr, tc.expectedErr)
+			require.Nil(t, svc)
+		})
+	}
 }
