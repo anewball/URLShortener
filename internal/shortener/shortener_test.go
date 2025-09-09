@@ -97,7 +97,7 @@ func TestAdd(t *testing.T) {
 			url:          "",
 			expectedErr:  ErrIsValidURL,
 			expectedCode: "",
-			codeGenMock:  nil,
+			codeGenMock:  &mockNanoID{},
 			conn:         &mockDatabaseConn{},
 		},
 		{
@@ -148,6 +148,7 @@ func TestGet(t *testing.T) {
 		shortCode      string
 		expectedRawURL string
 		expectedErr    error
+		codeGenMock    NanoID
 		queryRowFunc   func(ctx context.Context, sql string, args ...any) pgx.Row
 	}{
 		{
@@ -155,6 +156,7 @@ func TestGet(t *testing.T) {
 			shortCode:      "xK9fA3T8bfqHXEIhYkoU0M",
 			expectedErr:    nil,
 			expectedRawURL: "http://example.com",
+			codeGenMock:    &mockNanoID{},
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{result: []any{"http://example.com"}}
 			},
@@ -163,6 +165,7 @@ func TestGet(t *testing.T) {
 			name:        "empty short code",
 			shortCode:   "",
 			expectedErr: ErrEmptyCode,
+			codeGenMock: &mockNanoID{},
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: fmt.Errorf("short URL cannot be empty")}
 			},
@@ -171,6 +174,7 @@ func TestGet(t *testing.T) {
 			name:        "not found",
 			shortCode:   "nonexistent",
 			expectedErr: ErrNotFound,
+			codeGenMock: &mockNanoID{},
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: pgx.ErrNoRows}
 			},
@@ -179,6 +183,7 @@ func TestGet(t *testing.T) {
 			name:        "err tx closed",
 			shortCode:   "nonexistent",
 			expectedErr: ErrQuery,
+			codeGenMock: &mockNanoID{},
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: pgx.ErrTxClosed}
 			},
@@ -189,7 +194,7 @@ func TestGet(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := &mockDatabaseConn{QueryRowFunc: tc.queryRowFunc}
 
-			service, _ := New(m, nil)
+			service, _ := New(m, tc.codeGenMock)
 			actualRawURL, err := service.Get(context.Background(), tc.shortCode)
 
 			require.Equal(t, tc.expectedRawURL, actualRawURL)
