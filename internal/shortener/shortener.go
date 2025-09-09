@@ -90,16 +90,16 @@ func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 
 func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	if shortCode == empty {
-		return empty, ErrEmptyCode
+		return empty, fmt.Errorf("%w: %v", ErrEmptyCode, empty)
 	}
 
 	var originalURL string
 	err := s.db.QueryRow(ctx, GetQuery, shortCode).Scan(&originalURL)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			return empty, ErrNotFound
+			return empty, fmt.Errorf("%w: %v", ErrNotFound, shortCode)
 		}
-		return empty, fmt.Errorf("failed to retrieve URL: %w", err)
+		return empty, fmt.Errorf("%w: %v", ErrNotFound, shortCode)
 	}
 
 	return originalURL, nil
