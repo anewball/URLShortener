@@ -74,13 +74,13 @@ func TestAdd(t *testing.T) {
 		gen          NanoID
 		conn         db.Conn
 		expectedErr  error
-		expectedCode string
+		expectedShortCode string
 	}{
 		{
 			name:         "success",
 			rawURL:       "http://example.com",
 			expectedErr:  nil,
-			expectedCode: "abc123",
+			expectedShortCode: "abc123",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
 					return "abc123", nil
@@ -96,7 +96,7 @@ func TestAdd(t *testing.T) {
 			name:         "empty URL",
 			rawURL:       "",
 			expectedErr:  ErrIsValidURL,
-			expectedCode: "",
+			expectedShortCode: "",
 			gen:          &mockNanoID{},
 			conn:         &mockDatabaseConn{},
 		},
@@ -104,7 +104,7 @@ func TestAdd(t *testing.T) {
 			name:         "codeGen error",
 			rawURL:       "http://example.com",
 			expectedErr:  ErrGenerate,
-			expectedCode: "",
+			expectedShortCode: "",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
 					return "", fmt.Errorf("codeGen error")
@@ -116,7 +116,7 @@ func TestAdd(t *testing.T) {
 			name:         "exec failure",
 			rawURL:       "http://example.com",
 			expectedErr:  ErrExec,
-			expectedCode: "",
+			expectedShortCode: "",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
 					return "abc123", nil
@@ -136,7 +136,7 @@ func TestAdd(t *testing.T) {
 
 			actualShortCode, err := service.Add(context.Background(), tc.rawURL)
 
-			require.Equal(t, tc.expectedCode, actualShortCode)
+			require.Equal(t, tc.expectedShortCode, actualShortCode)
 			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
@@ -211,20 +211,20 @@ func TestGet(t *testing.T) {
 
 func TestList(t *testing.T) {
 	testCases := []struct {
-		name            string
-		limit           int
-		offset          int
-		expectedErr     error
-		expectedURLItem []URLItem
-		gen             NanoID
-		conn            db.Conn
+		name          string
+		limit         int
+		offset        int
+		expectedErr   error
+		expectedItems []URLItem
+		gen           NanoID
+		conn          db.Conn
 	}{
 		{
 			name:        "success",
 			limit:       10,
 			offset:      0,
 			expectedErr: nil,
-			expectedURLItem: []URLItem{
+			expectedItems: []URLItem{
 				{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
 				{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
 			},
@@ -293,9 +293,9 @@ func TestList(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			service, _ := New(tc.conn, tc.gen)
-			actualURLItem, err := service.List(context.Background(), tc.limit, tc.offset)
+			actualItems, err := service.List(context.Background(), tc.limit, tc.offset)
 
-			require.Equal(t, tc.expectedURLItem, actualURLItem)
+			require.Equal(t, tc.expectedItems, actualItems)
 			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
