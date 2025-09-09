@@ -28,7 +28,6 @@ var (
 	ErrIsValidURL  = errors.New("invalid URL")
 	ErrQuery       = errors.New("failed to execute query")
 	ErrScan        = errors.New("failed to scan row")
-	ErrRowNotFound = errors.New("row not found")
 )
 
 type URLShortener interface {
