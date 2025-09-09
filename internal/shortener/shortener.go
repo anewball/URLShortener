@@ -99,10 +99,10 @@ func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	var originalURL string
 	err := s.db.QueryRow(ctx, GetQuery, shortCode).Scan(&originalURL)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return empty, fmt.Errorf("%w: %v", ErrNotFound, shortCode)
 		}
-		return empty, fmt.Errorf("%w: %v", ErrNotFound, shortCode)
+		return empty, fmt.Errorf("%w: %v", ErrQuery, shortCode)
 	}
 
 	return originalURL, nil
