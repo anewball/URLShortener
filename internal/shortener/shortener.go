@@ -26,6 +26,7 @@ var (
 	ErrGenerate    = errors.New("failed to generate short URL")
 	ErrExec        = errors.New("failed to execute database command")
 	ErrIsValidURL  = errors.New("invalid URL")
+	ErrQuery       = errors.New("failed to execute query")
 )
 
 type URLShortener interface {
@@ -108,7 +109,7 @@ func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, error) {
 	rows, err := s.db.Query(ctx, ListQuery, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list URLs: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrQuery, empty)
 	}
 	defer rows.Close()
 
