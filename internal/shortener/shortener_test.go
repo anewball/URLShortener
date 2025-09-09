@@ -307,15 +307,19 @@ func TestDelete(t *testing.T) {
 		shortCode       string
 		expectedErr     error
 		expectedDeleted bool
-		execFunc        func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+		gen             NanoID
+		conn            db.Conn
 	}{
 		{
 			name:            "success",
 			shortCode:       "xK9fA3T8bfqHXEIhYkoU0M",
 			expectedDeleted: true,
 			expectedErr:     nil,
-			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-				return pgconn.NewCommandTag("DELETE 1"), nil
+			gen:             &mockNanoID{},
+			conn: &mockDatabaseConn{
+				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+					return pgconn.NewCommandTag("DELETE 1"), nil
+				},
 			},
 		},
 		{
@@ -323,8 +327,11 @@ func TestDelete(t *testing.T) {
 			shortCode:       "",
 			expectedDeleted: false,
 			expectedErr:     ErrEmptyCode,
-			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-				return pgconn.CommandTag{}, nil
+			gen:             &mockNanoID{},
+			conn: &mockDatabaseConn{
+				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+					return pgconn.CommandTag{}, nil
+				},
 			},
 		},
 		{
@@ -332,8 +339,11 @@ func TestDelete(t *testing.T) {
 			shortCode:       "nonexistent",
 			expectedDeleted: false,
 			expectedErr:     ErrExec,
-			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-				return pgconn.CommandTag{}, pgx.ErrNoRows
+			gen:             &mockNanoID{},
+			conn: &mockDatabaseConn{
+				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+					return pgconn.CommandTag{}, pgx.ErrNoRows
+				},
 			},
 		},
 		{
@@ -341,17 +351,18 @@ func TestDelete(t *testing.T) {
 			shortCode:       "xK9fA3T8bfqHXEIhYkoU0M",
 			expectedDeleted: false,
 			expectedErr:     ErrNotFound,
-			execFunc: func(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
-				return pgconn.NewCommandTag("DELETE 0"), nil
+			gen:             &mockNanoID{},
+			conn: &mockDatabaseConn{
+				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+					return pgconn.NewCommandTag("DELETE 0"), nil
+				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := &mockDatabaseConn{ExecFunc: tc.execFunc}
-
-			service, _ := New(m, &mockNanoID{})
+			service, _ := New(tc.conn, tc.gen)
 			actualDeleted, err := service.Delete(context.Background(), tc.shortCode)
 
 			require.Equal(t, tc.expectedDeleted, actualDeleted)
