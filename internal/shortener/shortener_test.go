@@ -18,49 +18,49 @@ import (
 func TestIsValidURL(t *testing.T) {
 	testCases := []struct {
 		name        string
-		url         string
+		rawURL      string
 		expectedErr error
 	}{
 		{
 			name:        "valid URL",
-			url:         "http://example.com",
+			rawURL:      "http://example.com",
 			expectedErr: nil,
 		},
 		{
 			name:        "empty URL",
-			url:         "",
+			rawURL:      "",
 			expectedErr: ErrEmptyURL,
 		},
 		{
 			name:        "too long URL",
-			url:         strings.Repeat("a", 2049),
+			rawURL:      strings.Repeat("a", 2049),
 			expectedErr: ErrTooLong,
 		},
 		{
 			name:        "invalid URL",
-			url:         ":///invalid-url.com",
+			rawURL:      ":///invalid-url.com",
 			expectedErr: ErrParse,
 		},
 		{
 			name:        "no scheme",
-			url:         "example.com",
+			rawURL:      "example.com",
 			expectedErr: ErrEmptyScheme,
 		},
 		{
 			name:        "no host",
-			url:         "http://",
+			rawURL:      "http://",
 			expectedErr: ErrEmptyHost,
 		},
 		{
 			name:        "invalid scheme",
-			url:         "ftp://example.com",
+			rawURL:      "ftp://example.com",
 			expectedErr: ErrScheme,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actualErr := isValidURL(tc.url)
+			actualErr := isValidURL(tc.rawURL)
 
 			assert.ErrorIs(t, actualErr, tc.expectedErr)
 		})
@@ -70,18 +70,18 @@ func TestIsValidURL(t *testing.T) {
 func TestAdd(t *testing.T) {
 	testCases := []struct {
 		name         string
-		url          string
-		codeGenMock  NanoID
+		rawURL       string
+		gen          NanoID
 		conn         db.Conn
 		expectedErr  error
 		expectedCode string
 	}{
 		{
 			name:         "success",
-			url:          "http://example.com",
+			rawURL:       "http://example.com",
 			expectedErr:  nil,
 			expectedCode: "abc123",
-			codeGenMock: &mockNanoID{
+			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
 					return "abc123", nil
 				},
@@ -94,18 +94,18 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			name:         "empty URL",
-			url:          "",
+			rawURL:       "",
 			expectedErr:  ErrIsValidURL,
 			expectedCode: "",
-			codeGenMock:  &mockNanoID{},
+			gen:          &mockNanoID{},
 			conn:         &mockDatabaseConn{},
 		},
 		{
 			name:         "codeGen error",
-			url:          "http://example.com",
+			rawURL:       "http://example.com",
 			expectedErr:  ErrGenerate,
 			expectedCode: "",
-			codeGenMock: &mockNanoID{
+			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
 					return "", fmt.Errorf("codeGen error")
 				},
@@ -114,10 +114,10 @@ func TestAdd(t *testing.T) {
 		},
 		{
 			name:         "exec failure",
-			url:          "http://example.com",
+			rawURL:       "http://example.com",
 			expectedErr:  ErrExec,
 			expectedCode: "",
-			codeGenMock: &mockNanoID{
+			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
 					return "abc123", nil
 				},
@@ -132,9 +132,9 @@ func TestAdd(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, _ := New(tc.conn, tc.codeGenMock)
+			service, _ := New(tc.conn, tc.gen)
 
-			actualShortCode, err := service.Add(context.Background(), tc.url)
+			actualShortCode, err := service.Add(context.Background(), tc.rawURL)
 
 			require.Equal(t, tc.expectedCode, actualShortCode)
 			assert.ErrorIs(t, err, tc.expectedErr)
@@ -148,7 +148,7 @@ func TestGet(t *testing.T) {
 		shortCode      string
 		expectedRawURL string
 		expectedErr    error
-		codeGenMock    NanoID
+		gen            NanoID
 		conn           db.Conn
 	}{
 		{
@@ -156,7 +156,7 @@ func TestGet(t *testing.T) {
 			shortCode:      "xK9fA3T8bfqHXEIhYkoU0M",
 			expectedErr:    nil,
 			expectedRawURL: "http://example.com",
-			codeGenMock:    &mockNanoID{},
+			gen:            &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 					return &mockRow{result: []any{"http://example.com"}}
@@ -167,7 +167,7 @@ func TestGet(t *testing.T) {
 			name:        "empty short code",
 			shortCode:   "",
 			expectedErr: ErrEmptyCode,
-			codeGenMock: &mockNanoID{},
+			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 					return &mockRow{err: fmt.Errorf("short URL cannot be empty")}
@@ -178,7 +178,7 @@ func TestGet(t *testing.T) {
 			name:        "not found",
 			shortCode:   "nonexistent",
 			expectedErr: ErrNotFound,
-			codeGenMock: &mockNanoID{},
+			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 					return &mockRow{err: pgx.ErrNoRows}
@@ -189,7 +189,7 @@ func TestGet(t *testing.T) {
 			name:        "err tx closed",
 			shortCode:   "nonexistent",
 			expectedErr: ErrQuery,
-			codeGenMock: &mockNanoID{},
+			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 					return &mockRow{err: pgx.ErrTxClosed}
@@ -200,7 +200,7 @@ func TestGet(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, _ := New(tc.conn, tc.codeGenMock)
+			service, _ := New(tc.conn, tc.gen)
 			actualRawURL, err := service.Get(context.Background(), tc.shortCode)
 
 			require.Equal(t, tc.expectedRawURL, actualRawURL)
@@ -211,24 +211,24 @@ func TestGet(t *testing.T) {
 
 func TestList(t *testing.T) {
 	testCases := []struct {
-		name         string
-		limit        int
-		offset       int
-		expectedErr  error
-		expectedData []URLItem
-		codeGenMock  NanoID
-		conn         db.Conn
+		name            string
+		limit           int
+		offset          int
+		expectedErr     error
+		expectedURLItem []URLItem
+		gen             NanoID
+		conn            db.Conn
 	}{
 		{
 			name:        "success",
 			limit:       10,
 			offset:      0,
 			expectedErr: nil,
-			expectedData: []URLItem{
+			expectedURLItem: []URLItem{
 				{uint64(1), "http://example.com/1", "GL9VeCa", time.Date(2025, 8, 20, 12, 0, 0, 0, time.UTC), (*time.Time)(nil)},
 				{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
 			},
-			codeGenMock: &mockNanoID{},
+			gen: &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 					return &mockRows{
@@ -246,7 +246,7 @@ func TestList(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			expectedErr: ErrQuery,
-			codeGenMock: &mockNanoID{},
+			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 					return &mockRows{
@@ -263,7 +263,7 @@ func TestList(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			expectedErr: ErrQuery,
-			codeGenMock: &mockNanoID{},
+			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 					return nil, fmt.Errorf("query error")
@@ -275,7 +275,7 @@ func TestList(t *testing.T) {
 			limit:       10,
 			offset:      0,
 			expectedErr: ErrScan,
-			codeGenMock: &mockNanoID{},
+			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 					return &mockRows{
@@ -292,10 +292,10 @@ func TestList(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			service, _ := New(tc.conn, tc.codeGenMock)
-			actualData, err := service.List(context.Background(), tc.limit, tc.offset)
+			service, _ := New(tc.conn, tc.gen)
+			actualURLItem, err := service.List(context.Background(), tc.limit, tc.offset)
 
-			require.Equal(t, tc.expectedData, actualData)
+			require.Equal(t, tc.expectedURLItem, actualURLItem)
 			assert.ErrorIs(t, err, tc.expectedErr)
 		})
 	}
