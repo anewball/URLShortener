@@ -28,6 +28,8 @@ var (
 	ErrIsValidURL  = errors.New("invalid URL")
 	ErrQuery       = errors.New("failed to execute query")
 	ErrScan        = errors.New("failed to scan row")
+	ErrDBNil       = errors.New("database connection is nil")
+	ErrNanoIDNil   = errors.New("NanoID generator is nil")
 )
 
 type URLShortener interface {
@@ -54,10 +56,10 @@ type URLItem struct {
 
 func New(db db.Conn, gen NanoID) (URLShortener, error) {
 	if db == nil {
-		return nil, fmt.Errorf("db cannot be nil")
+		return nil, fmt.Errorf("%w", ErrDBNil)
 	}
 	if gen == nil {
-		gen = NewNanoID(Alphabet)
+		return nil, fmt.Errorf("%w", ErrNanoIDNil)
 	}
 	return &shortener{db: db, gen: gen}, nil
 }
