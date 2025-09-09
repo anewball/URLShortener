@@ -230,7 +230,7 @@ func TestList(t *testing.T) {
 			name:        "no URLs found",
 			limit:       10,
 			offset:      0,
-			expectedErr: ErrRowNotFound,
+			expectedErr: ErrQuery,
 			queryFunc: func(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
 				return &mockRows{
 					data:   [][]any{},
