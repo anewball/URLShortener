@@ -27,6 +27,7 @@ var (
 	ErrExec        = errors.New("failed to execute database command")
 	ErrIsValidURL  = errors.New("invalid URL")
 	ErrQuery       = errors.New("failed to execute query")
+	ErrScan        = errors.New("failed to scan row")
 )
 
 type URLShortener interface {
@@ -117,7 +118,7 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	for rows.Next() {
 		var item URLItem
 		if err := rows.Scan(&item.ID, &item.OriginalURL, &item.ShortCode, &item.CreatedAt, &item.ExpiresAt); err != nil {
-			return nil, fmt.Errorf("failed to scan URL: %w", err)
+			return nil, fmt.Errorf("%w: %v", ErrScan, err)
 		}
 		items = append(items, item)
 	}
