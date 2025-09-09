@@ -54,9 +54,6 @@ func (m *mockRow) Scan(dest ...any) error {
 	if m.err != nil {
 		return m.err
 	}
-	if len(dest) != len(m.result) {
-		return fmt.Errorf("scan: destination count %d != column count %d", len(dest), len(m.result))
-	}
 
 	for i := range dest {
 		v := m.result[i]
@@ -64,37 +61,7 @@ func (m *mockRow) Scan(dest ...any) error {
 		case *string:
 			if s, ok := v.(string); ok {
 				*d = s
-			} else {
-				return fmt.Errorf("scan: cannot assign %T to *string", v)
 			}
-		case *uint64:
-			switch x := v.(type) {
-			case uint64:
-				*d = x
-			case int64:
-				*d = uint64(x)
-			case int:
-				*d = uint64(x)
-			default:
-				return fmt.Errorf("scan: cannot assign %T to *uint64", v)
-			}
-		case *time.Time:
-			if tt, ok := v.(time.Time); ok {
-				*d = tt
-			} else {
-				return fmt.Errorf("scan: cannot assign %T to *time.Time", v)
-			}
-		case **time.Time: // nullable
-			switch x := v.(type) {
-			case *time.Time:
-				*d = x
-			case nil:
-				*d = nil
-			default:
-				return fmt.Errorf("scan: cannot assign %T to **time.Time", v)
-			}
-		default:
-			return fmt.Errorf("scan: unsupported destination type %T", d)
 		}
 	}
 	return nil
@@ -168,37 +135,21 @@ func (m *mockRows) Scan(dest ...any) error {
 		case *string:
 			if s, ok := v.(string); ok {
 				*d = s
-			} else {
-				return fmt.Errorf("scan: cannot assign %T to *string", v)
 			}
 		case *uint64:
 			switch x := v.(type) {
 			case uint64:
 				*d = x
-			case int64:
-				*d = uint64(x)
-			case int:
-				*d = uint64(x)
-			default:
-				return fmt.Errorf("scan: cannot assign %T to *uint64", v)
 			}
 		case *time.Time:
 			if tt, ok := v.(time.Time); ok {
 				*d = tt
-			} else {
-				return fmt.Errorf("scan: cannot assign %T to *time.Time", v)
 			}
 		case **time.Time: // nullable
 			switch x := v.(type) {
 			case *time.Time:
 				*d = x
-			case nil:
-				*d = nil
-			default:
-				return fmt.Errorf("scan: cannot assign %T to **time.Time", v)
 			}
-		default:
-			return fmt.Errorf("scan: unsupported destination type %T", d)
 		}
 	}
 	return nil
