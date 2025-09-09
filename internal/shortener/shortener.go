@@ -28,6 +28,7 @@ var (
 	ErrIsValidURL  = errors.New("invalid URL")
 	ErrQuery       = errors.New("failed to execute query")
 	ErrScan        = errors.New("failed to scan row")
+	ErrRowNotFound = errors.New("row not found")
 )
 
 type URLShortener interface {
@@ -124,7 +125,7 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrRowNotFound, err)
 	}
 
 	return items, nil
