@@ -178,7 +178,7 @@ func TestGet(t *testing.T) {
 		{
 			name:        "err tx closed",
 			shortCode:   "nonexistent",
-			expectedErr: ErrNotFound,
+			expectedErr: ErrQuery,
 			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
 				return &mockRow{err: pgx.ErrTxClosed}
 			},
