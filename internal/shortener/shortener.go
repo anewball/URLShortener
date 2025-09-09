@@ -133,16 +133,16 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 
 func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
 	if shortCode == empty {
-		return false, ErrEmptyCode
+		return false, fmt.Errorf("failed to delete: %w", ErrEmptyCode)
 	}
 
 	cmdTag, err := s.db.Exec(ctx, DeleteQuery, shortCode)
 	if err != nil {
-		return false, fmt.Errorf("failed to delete: %w", err)
+		return false, fmt.Errorf("failed to delete: %w: %v", ErrExec, err)
 	}
 
 	if cmdTag.RowsAffected() == 0 {
-		return false, ErrNotFound
+		return false, fmt.Errorf("failed to delete: %w", ErrNotFound)
 	}
 
 	return true, nil
