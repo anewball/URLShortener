@@ -149,7 +149,7 @@ func TestGet(t *testing.T) {
 		expectedRawURL string
 		expectedErr    error
 		codeGenMock    NanoID
-		queryRowFunc   func(ctx context.Context, sql string, args ...any) pgx.Row
+		conn           db.Conn
 	}{
 		{
 			name:           "success",
@@ -157,8 +157,10 @@ func TestGet(t *testing.T) {
 			expectedErr:    nil,
 			expectedRawURL: "http://example.com",
 			codeGenMock:    &mockNanoID{},
-			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
-				return &mockRow{result: []any{"http://example.com"}}
+			conn: &mockDatabaseConn{
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
+					return &mockRow{result: []any{"http://example.com"}}
+				},
 			},
 		},
 		{
@@ -166,8 +168,10 @@ func TestGet(t *testing.T) {
 			shortCode:   "",
 			expectedErr: ErrEmptyCode,
 			codeGenMock: &mockNanoID{},
-			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
-				return &mockRow{err: fmt.Errorf("short URL cannot be empty")}
+			conn: &mockDatabaseConn{
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
+					return &mockRow{err: fmt.Errorf("short URL cannot be empty")}
+				},
 			},
 		},
 		{
@@ -175,8 +179,10 @@ func TestGet(t *testing.T) {
 			shortCode:   "nonexistent",
 			expectedErr: ErrNotFound,
 			codeGenMock: &mockNanoID{},
-			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
-				return &mockRow{err: pgx.ErrNoRows}
+			conn: &mockDatabaseConn{
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
+					return &mockRow{err: pgx.ErrNoRows}
+				},
 			},
 		},
 		{
@@ -184,17 +190,17 @@ func TestGet(t *testing.T) {
 			shortCode:   "nonexistent",
 			expectedErr: ErrQuery,
 			codeGenMock: &mockNanoID{},
-			queryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
-				return &mockRow{err: pgx.ErrTxClosed}
+			conn: &mockDatabaseConn{
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) pgx.Row {
+					return &mockRow{err: pgx.ErrTxClosed}
+				},
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := &mockDatabaseConn{QueryRowFunc: tc.queryRowFunc}
-
-			service, _ := New(m, tc.codeGenMock)
+			service, _ := New(tc.conn, tc.codeGenMock)
 			actualRawURL, err := service.Get(context.Background(), tc.shortCode)
 
 			require.Equal(t, tc.expectedRawURL, actualRawURL)
