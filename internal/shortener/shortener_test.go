@@ -342,10 +342,7 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 	t.Parallel()
 
 	svc, err := New(nil, nil)
-	if err == nil {
-		t.Fatalf("expected error when db is nil, got nil")
-	}
-	if svc != nil {
-		t.Fatalf("expected nil service when constructor fails, got non-nil")
-	}
+
+	require.Nil(t, svc)
+	require.Error(t, err)
 }
