@@ -3,21 +3,12 @@ package db
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/anewball/urlshortener/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Config holds database connection options
-type Config struct {
-	URL             string
-	MaxConns        int32
-	MinConns        int32
-	MaxConnLifetime time.Duration
-	MaxConnIdleTime time.Duration
-}
-
-func NewPool(ctx context.Context, cfg Config) (Conn, error) {
+func NewPool(ctx context.Context, cfg config.Config) (Conn, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("db: empty connection URL")
 	}
