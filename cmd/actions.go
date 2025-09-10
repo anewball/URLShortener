@@ -38,7 +38,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 		return errors.New("failed to add URL")
 	}
 
-	result := Result{Code: shortCode, Url: arg}
+	result := Result{ShortCode: shortCode, RawURL: arg}
 
 	encoder := json.NewEncoder(out)
 	encoder.SetEscapeHTML(false)
@@ -60,7 +60,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 		return errors.New("failed to retrieve original URL")
 	}
 
-	result := Result{Code: arg, Url: url}
+	result := Result{ShortCode: arg, RawURL: url}
 	encoder := json.NewEncoder(out)
 	encoder.SetEscapeHTML(false)
 
@@ -87,7 +87,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 
 	var results []Result = make([]Result, 0, len(urlItems))
 	for _, u := range urlItems {
-		results = append(results, Result{Code: u.ShortCode, Url: u.OriginalURL})
+		results = append(results, Result{ShortCode: u.ShortCode, RawURL: u.OriginalURL})
 	}
 
 	encoder := json.NewEncoder(out)
@@ -116,7 +116,7 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	var response DeleteResponse
 
 	response.Deleted = deleted
-	response.Code = shortCode
+	response.ShortCode = shortCode
 
 	encoder := json.NewEncoder(out)
 	encoder.SetEscapeHTML(false)

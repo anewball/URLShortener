@@ -15,13 +15,13 @@ var (
 )
 
 type Result struct {
-	Code string `json:"code"`
-	Url  string `json:"url"`
+	ShortCode string `json:"shortCode"`
+	RawURL    string `json:"rawUrl"`
 }
 
 type DeleteResponse struct {
-	Deleted bool   `json:"deleted"`
-	Code    string `json:"code"`
+	Deleted   bool   `json:"deleted"`
+	ShortCode string `json:"shortCode"`
 }
 
 func NewRoot() *cobra.Command {

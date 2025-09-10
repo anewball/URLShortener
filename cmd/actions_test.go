@@ -34,7 +34,7 @@ func TestAddActions(t *testing.T) {
 			args:           []string{"https://example.com"},
 			actionFunction: addAction,
 			buf:            bytes.Buffer{},
-			expectedResult: Result{Code: "Hpa3t2B", Url: "https://example.com"},
+			expectedResult: Result{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
 			isError:        false,
 			shor: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
@@ -146,7 +146,7 @@ func TestGetAction(t *testing.T) {
 			args:           []string{"Hpa3t2B"},
 			actionFunction: getAction,
 			buf:            bytes.Buffer{},
-			expectedResult: Result{Code: "Hpa3t2B", Url: "https://example.com"},
+			expectedResult: Result{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
 			isError:        false,
 			shor: &mockedShortener{
 				getFunc: func(ctx context.Context, shortCode string) (string, error) {
@@ -258,7 +258,7 @@ func TestDeleteAction(t *testing.T) {
 			args:           []string{"Hpa3t2B"},
 			actionFunction: deleteAction,
 			buf:            bytes.Buffer{},
-			expectedResult: DeleteResponse{Deleted: true, Code: "Hpa3t2B"},
+			expectedResult: DeleteResponse{Deleted: true, ShortCode: "Hpa3t2B"},
 			isError:        false,
 			shor: &mockedShortener{
 				deleteFunc: func(ctx context.Context, shortCode string) (bool, error) {
@@ -385,8 +385,8 @@ func TestListAction(t *testing.T) {
 			actionFunction: listAction,
 			buf:            bytes.Buffer{},
 			expectedResult: []Result{
-				{Url: "https://anewball.com", Code: "nMHdgTh"},
-				{Url: "https://jayden.newball.com", Code: "k5aBWD5"},
+				{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
+				{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
 			},
 			isError: false,
 			shor: &mockedShortener{
