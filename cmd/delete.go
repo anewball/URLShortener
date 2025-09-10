@@ -1,55 +1,17 @@
 package cmd
 
 import (
-	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"time"
-
-	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-var deleteActionFunc = deleteAction
-
-func NewDelete(app *app.App) *cobra.Command {
+func NewDelete(acts Actions, svc shortener.URLShortener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <code>",
 		Short: "Delete a URL from the shortener service by short code",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return deleteActionFunc(cmd.Context(), cmd.OutOrStdout(), app.Shortener, args)
+			return acts.DeleteAction(cmd.Context(), cmd.OutOrStdout(), svc, args)
 		},
 	}
-}
-
-func deleteAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	if len(args) == 0 {
-		return fmt.Errorf("requires at least 1 arg(s), only received 0")
-	}
-	code := args[0]
-
-	deleted, err := service.Delete(ctx, code)
-	if err != nil {
-		return errors.New("failed to delete URL")
-	}
-	if !deleted {
-		return fmt.Errorf("no URL found for code %q", code)
-	}
-
-	var response DeleteResponse
-
-	response.Deleted = deleted
-	response.Code = code
-
-	encoder := json.NewEncoder(out)
-	encoder.SetEscapeHTML(false)
-
-	return encoder.Encode(response)
 }
