@@ -12,10 +12,10 @@ import (
 )
 
 type Actions interface {
-	AddAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error
-	GetAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error
-	ListAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.URLShortener) error
-	DeleteAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error
+	AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
+	GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
+	ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error
+	DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
 }
 
 type actions struct{}
@@ -24,7 +24,7 @@ func NewActions() Actions {
 	return &actions{}
 }
 
-func (a *actions) AddAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
+func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -33,12 +33,12 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, service shortene
 	}
 
 	arg := args[0]
-	code, err := service.Add(ctx, arg)
+	shortCode, err := svc.Add(ctx, arg)
 	if err != nil {
 		return errors.New("failed to add URL")
 	}
 
-	result := Result{Code: code, Url: arg}
+	result := Result{Code: shortCode, Url: arg}
 
 	encoder := json.NewEncoder(out)
 	encoder.SetEscapeHTML(false)
@@ -46,7 +46,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, service shortene
 	return encoder.Encode(result)
 }
 
-func (a *actions) GetAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
+func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -55,7 +55,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, service shortene
 	}
 
 	arg := args[0]
-	url, err := service.Get(ctx, arg)
+	url, err := svc.Get(ctx, arg)
 	if err != nil {
 		return errors.New("failed to retrieve original URL")
 	}
@@ -67,7 +67,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, service shortene
 	return encoder.Encode(result)
 }
 
-func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, service shortener.URLShortener) error {
+func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -80,7 +80,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		return fmt.Errorf("offset cannot be negative")
 	}
 
-	urlItems, err := service.List(ctx, limit, offset)
+	urlItems, err := svc.List(ctx, limit, offset)
 	if err != nil {
 		return errors.New("failed to list URLs")
 	}
@@ -96,27 +96,27 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 	return encoder.Encode(results)
 }
 
-func (a *actions) DeleteAction(ctx context.Context, out io.Writer, service shortener.URLShortener, args []string) error {
+func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if len(args) == 0 {
 		return fmt.Errorf("requires at least 1 arg(s), only received 0")
 	}
-	code := args[0]
+	shortCode := args[0]
 
-	deleted, err := service.Delete(ctx, code)
+	deleted, err := svc.Delete(ctx, shortCode)
 	if err != nil {
 		return errors.New("failed to delete URL")
 	}
 	if !deleted {
-		return fmt.Errorf("no URL found for code %q", code)
+		return fmt.Errorf("no URL found for code %q", shortCode)
 	}
 
 	var response DeleteResponse
 
 	response.Deleted = deleted
-	response.Code = code
+	response.Code = shortCode
 
 	encoder := json.NewEncoder(out)
 	encoder.SetEscapeHTML(false)
