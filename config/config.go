@@ -28,7 +28,7 @@ func NewBuilder(en env.Env) *Builder {
 	return &Builder{db: Config{}, en: en}
 }
 
-func (b *Builder) MergeEnv() *Builder {
+func (b *Builder) FromEnv() *Builder {
 	if v, err := b.en.Get("DB_URL"); err == nil {
 		b.db.URL = v
 	}
