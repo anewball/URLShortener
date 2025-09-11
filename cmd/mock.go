@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"io"
 
 	"github.com/anewball/urlshortener/env"
 	"github.com/anewball/urlshortener/internal/db"
@@ -82,4 +83,29 @@ func (m *mockEnv) Get(key string) (string, error) {
 		return m.getFunc(key)
 	}
 	return "", nil
+}
+
+var _ Actions = (*mockedActions)(nil)
+
+type mockedActions struct {
+	AddActionFunc    func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
+	GetActionFunc    func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
+	ListActionFunc   func(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error
+	DeleteActionFunc func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
+}
+
+func (m *mockedActions) AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+	return m.AddActionFunc(ctx, out, svc, args)
+}
+
+func (m *mockedActions) GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+	return m.GetActionFunc(ctx, out, svc, args)
+}
+
+func (m *mockedActions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
+	return m.ListActionFunc(ctx, limit, offset, out, svc)
+}
+
+func (m *mockedActions) DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+	return m.DeleteActionFunc(ctx, out, svc, args)
 }
