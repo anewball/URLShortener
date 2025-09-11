@@ -11,6 +11,11 @@ import (
 	"github.com/anewball/urlshortener/internal/shortener"
 )
 
+var (
+	ErrLenZero = errors.New("requires at least 1 arg(s), only received 0")
+	ErrAdd     = errors.New("failed to add URL")
+)
+
 type Actions interface {
 	AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
 	GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
@@ -29,13 +34,13 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	defer cancel()
 
 	if len(args) == 0 {
-		return errors.New("requires at least 1 arg(s), only received 0")
+		return fmt.Errorf("%w", ErrLenZero)
 	}
 
 	arg := args[0]
 	shortCode, err := svc.Add(ctx, arg)
 	if err != nil {
-		return errors.New("failed to add URL")
+		return fmt.Errorf("%w", ErrAdd)
 	}
 
 	result := Result{ShortCode: shortCode, RawURL: arg}
