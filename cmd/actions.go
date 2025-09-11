@@ -12,11 +12,14 @@ import (
 )
 
 var (
-	ErrLenZero  = errors.New("requires at least 1 arg(s), only received 0")
-	ErrAdd      = errors.New("failed to add URL")
-	ErrGet      = errors.New("failed to retrieve original URL")
-	ErrDelete   = errors.New("failed to delete URL")
-	ErrNotFound = errors.New("no URL found for code")
+	ErrLenZero        = errors.New("requires at least 1 arg(s), only received 0")
+	ErrAdd            = errors.New("failed to add URL")
+	ErrGet            = errors.New("failed to retrieve original URL")
+	ErrDelete         = errors.New("failed to delete URL")
+	ErrNotFound       = errors.New("no URL found for code")
+	ErrLimit          = errors.New("invalid limit")
+	ErrNegativeOffset = errors.New("offset cannot be negative")
+	ErrList           = errors.New("failed to list URLs")
 )
 
 type Actions interface {
@@ -81,16 +84,16 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 
 	const maxLimit = 50
 	if limit <= 0 || limit > maxLimit {
-		return fmt.Errorf("limit must be between 1 and %d", maxLimit)
+		return fmt.Errorf("%w: %d", ErrLimit, limit)
 	}
 
 	if offset < 0 {
-		return fmt.Errorf("offset cannot be negative")
+		return fmt.Errorf("%w: %d", ErrNegativeOffset, offset)
 	}
 
 	urlItems, err := svc.List(ctx, limit, offset)
 	if err != nil {
-		return errors.New("failed to list URLs")
+		return fmt.Errorf("%w: %v", ErrList, err)
 	}
 
 	var results []Result = make([]Result, 0, len(urlItems))
