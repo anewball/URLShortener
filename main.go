@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/anewball/urlshortener/cmd"
@@ -24,10 +25,9 @@ func main() {
 }
 
 func run() error {
-	godotenv.Load()
-	viper.AutomaticEnv()
+	envMap := setupViper()
 
-	en := env.New()
+	en := env.New(envMap)
 	cfg, err := config.NewBuilder(en).FromEnv().Build()
 	if err != nil {
 		return err
@@ -49,4 +49,27 @@ func run() error {
 	actions := cmd.NewActions()
 
 	return cmd.Run(ctx, app, actions)
+}
+
+func setupViper() map[string]string {
+	_ = godotenv.Load()
+	v := viper.New()
+	v.AutomaticEnv()
+
+	_ = v.BindEnv("POSTGRES_USER")
+	_ = v.BindEnv("POSTGRES_PASSWORD")
+	_ = v.BindEnv("POSTGRES_DB")
+	_ = v.BindEnv("DB_MAX_CONNS")
+	_ = v.BindEnv("DB_MIN_CONNS")
+	_ = v.BindEnv("DB_MAX_CONN_LIFETIME")
+	_ = v.BindEnv("DB_MAX_CONN_IDLE_TIME")
+	_ = v.BindEnv("DB_URL")
+
+	envMap := map[string]string{}
+	for _, key := range v.AllKeys() {
+		k := strings.ToUpper(key)
+		envMap[k] = strings.TrimSpace(v.GetString(key))
+	}
+
+	return envMap
 }
