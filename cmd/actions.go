@@ -14,6 +14,7 @@ import (
 var (
 	ErrLenZero = errors.New("requires at least 1 arg(s), only received 0")
 	ErrAdd     = errors.New("failed to add URL")
+	ErrGet     = errors.New("failed to retrieve original URL")
 )
 
 type Actions interface {
@@ -56,13 +57,13 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	defer cancel()
 
 	if len(args) == 0 {
-		return errors.New("requires at least 1 arg(s), only received 0")
+		return fmt.Errorf("%w", ErrLenZero)
 	}
 
 	arg := args[0]
 	url, err := svc.Get(ctx, arg)
 	if err != nil {
-		return errors.New("failed to retrieve original URL")
+		return fmt.Errorf("%w: %v", ErrGet, err)
 	}
 
 	result := Result{ShortCode: arg, RawURL: url}
