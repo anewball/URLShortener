@@ -12,9 +12,11 @@ import (
 )
 
 var (
-	ErrLenZero = errors.New("requires at least 1 arg(s), only received 0")
-	ErrAdd     = errors.New("failed to add URL")
-	ErrGet     = errors.New("failed to retrieve original URL")
+	ErrLenZero  = errors.New("requires at least 1 arg(s), only received 0")
+	ErrAdd      = errors.New("failed to add URL")
+	ErrGet      = errors.New("failed to retrieve original URL")
+	ErrDelete   = errors.New("failed to delete URL")
+	ErrNotFound = errors.New("no URL found for code")
 )
 
 type Actions interface {
@@ -107,16 +109,16 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	defer cancel()
 
 	if len(args) == 0 {
-		return fmt.Errorf("requires at least 1 arg(s), only received 0")
+		return fmt.Errorf("%w", ErrLenZero)
 	}
 	shortCode := args[0]
 
 	deleted, err := svc.Delete(ctx, shortCode)
 	if err != nil {
-		return errors.New("failed to delete URL")
+		return fmt.Errorf("%w: %v", ErrDelete, err)
 	}
 	if !deleted {
-		return fmt.Errorf("no URL found for code %q", shortCode)
+		return fmt.Errorf("%w: %q", ErrNotFound, shortCode)
 	}
 
 	var response DeleteResponse
