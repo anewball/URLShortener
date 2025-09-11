@@ -1,8 +1,6 @@
-package mock
+package env
 
-import "github.com/anewball/urlshortener/env"
-
-var _ env.Env = (*mockEnv)(nil)
+var _ Env = (*mockEnv)(nil)
 
 type mockEnv struct {
 	getFunc func(key string) (string, error)
