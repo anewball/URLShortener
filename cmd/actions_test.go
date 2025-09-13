@@ -6,13 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/anewball/urlshortener/internal/app"
-	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -523,7 +520,6 @@ func TestRun(t *testing.T) {
 		args    []string
 		isError bool
 		actions Actions
-		conn    db.Conn
 		svc     shortener.URLShortener
 	}{
 		{
@@ -534,9 +530,6 @@ func TestRun(t *testing.T) {
 				GetActionFunc: func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
 					return nil
 				},
-			},
-			conn: &mockPool{
-				closeFunc: func() { log.Println("DB is closed") },
 			},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, shortCode string) (string, error) {
@@ -549,22 +542,16 @@ func TestRun(t *testing.T) {
 			args:    []string{"get1", "iYaycSQ"},
 			isError: true,
 			actions: nil,
-			conn:    nil,
 			svc:     nil,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			app := &app.App{
-				Conn:      tc.conn,
-				Shortener: tc.svc,
-			}
-
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			err := Run(ctx, app, tc.actions, tc.args...)
+			err := Run(ctx, tc.svc, tc.actions, tc.args...)
 
 			if tc.isError {
 				require.Error(t, err)
