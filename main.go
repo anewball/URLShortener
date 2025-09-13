@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -11,8 +12,8 @@ import (
 	"github.com/anewball/urlshortener/cmd"
 	"github.com/anewball/urlshortener/config"
 	"github.com/anewball/urlshortener/env"
-	"github.com/anewball/urlshortener/internal/app"
 	"github.com/anewball/urlshortener/internal/db"
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
@@ -40,15 +41,21 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	log.Println("Connected to database successfully")
+	defer func() {
+		conn.Close()
+		log.Println("Database connection pool closed")
+	}()
 
-	app, err := app.New(conn)
+	actions := cmd.NewActions()
+
+	gen := shortener.NewNanoID(shortener.Alphabet)
+	svc, err := shortener.New(conn, gen)
 	if err != nil {
 		return err
 	}
 
-	actions := cmd.NewActions()
-
-	return cmd.Run(ctx, app, actions)
+	return cmd.Run(ctx, svc, actions)
 }
 
 func setupViper() map[string]string {
