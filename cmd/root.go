@@ -5,13 +5,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/anewball/urlshortener/internal/app"
+	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
 var (
-	appInstance     *app.App
 	actionsInstance Actions
+	svcInstance     shortener.URLShortener
 )
 
 type Result struct {
@@ -39,23 +39,16 @@ func NewRoot() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
 	rootCmd.PersistentFlags().String("author", "Andy Newball", "author of the URL shortener")
 
-	rootCmd.AddCommand(NewAdd(actionsInstance, appInstance.Shortener), NewDelete(actionsInstance, appInstance.Shortener), NewGet(actionsInstance, appInstance.Shortener), NewList(actionsInstance, appInstance.Shortener))
+	rootCmd.AddCommand(NewAdd(actionsInstance, svcInstance), NewDelete(actionsInstance, svcInstance), NewGet(actionsInstance, svcInstance), NewList(actionsInstance, svcInstance))
 
 	return rootCmd
 }
 
-func Run(ctx context.Context, app *app.App, actions Actions, args ...string) error {
+func Run(ctx context.Context, svc shortener.URLShortener, actions Actions, args ...string) error {
 	log.SetOutput(os.Stderr)
 
-	appInstance = app
 	actionsInstance = actions
-
-	defer func() {
-		appInstance.Close()
-		log.Println("Database connection pool closed")
-	}()
-
-	log.Println("Connected to database successfully")
+	svcInstance = svc
 
 	root := NewRoot()
 	root.SetContext(ctx)
