@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func NewPool(ctx context.Context, cfg config.Config) (Conn, error) {
+func NewPool(ctx context.Context, cfg config.Config) (Querier, error) {
 	if cfg.URL == "" {
 		return nil, fmt.Errorf("db: empty connection URL")
 	}

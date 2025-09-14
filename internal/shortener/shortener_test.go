@@ -73,7 +73,7 @@ func TestAdd(t *testing.T) {
 		name              string
 		rawURL            string
 		gen               NanoID
-		conn              db.Conn
+		conn              db.Querier
 		expectedErr       error
 		expectedShortCode string
 	}{
@@ -150,7 +150,7 @@ func TestGet(t *testing.T) {
 		expectedRawURL string
 		expectedErr    error
 		gen            NanoID
-		conn           db.Conn
+		conn           db.Querier
 	}{
 		{
 			name:           "success",
@@ -218,7 +218,7 @@ func TestList(t *testing.T) {
 		expectedErr   error
 		expectedItems []URLItem
 		gen           NanoID
-		conn          db.Conn
+		conn          db.Querier
 	}{
 		{
 			name:  "success",
@@ -328,7 +328,7 @@ func TestDelete(t *testing.T) {
 		expectedErr     error
 		expectedDeleted bool
 		gen             NanoID
-		conn            db.Conn
+		conn            db.Querier
 	}{
 		{
 			name:            "success",
@@ -394,7 +394,7 @@ func TestDelete(t *testing.T) {
 func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 	testCases := []struct {
 		name        string
-		db          db.Conn
+		db          db.Querier
 		gen         NanoID
 		expectedErr error
 		isErrNil    bool

@@ -42,7 +42,7 @@ type URLShortener interface {
 var _ URLShortener = (*shortener)(nil)
 
 type shortener struct {
-	db  db.Conn
+	db  db.Querier
 	gen NanoID
 }
 
@@ -54,7 +54,7 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db db.Conn, gen NanoID) (URLShortener, error) {
+func New(db db.Querier, gen NanoID) (URLShortener, error) {
 	if db == nil {
 		return nil, fmt.Errorf("%w", ErrDBNil)
 	}
