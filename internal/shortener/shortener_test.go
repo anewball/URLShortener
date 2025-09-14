@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -434,4 +435,14 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestClose(t *testing.T) {
+	db := &mockDatabaseConn{
+		CloseFunc: func() {
+			log.Println("mock db closed")
+		},
+	}
+	require.NotNil(t, db)
+	db.Close()
 }
