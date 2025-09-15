@@ -119,3 +119,11 @@ type mockNanoID struct {
 func (m *mockNanoID) Generate(n int) (string, error) {
 	return m.GenerateFunc(n)
 }
+
+type mockCommandResult struct {
+	rowsAffected int64
+}
+
+func (m *mockCommandResult) RowsAffected() int64 {
+	return m.rowsAffected
+}

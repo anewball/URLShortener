@@ -10,8 +10,6 @@ import (
 	"time"
 
 	"github.com/anewball/urlshortener/internal/dbiface"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -89,7 +87,7 @@ func TestAdd(t *testing.T) {
 			},
 			conn: &mockDatabaseConn{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(pgconn.NewCommandTag("INSERT 1")), nil
+					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 1}), nil
 				},
 			},
 		},
@@ -125,7 +123,7 @@ func TestAdd(t *testing.T) {
 			},
 			conn: &mockDatabaseConn{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(pgconn.NewCommandTag("")), errors.New("database error")
+					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), errors.New("database error")
 				},
 			},
 		},
@@ -193,7 +191,7 @@ func TestGet(t *testing.T) {
 			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
-					return &mockRow{err: pgx.ErrTxClosed}
+					return &mockRow{err: ErrQuery}
 				},
 			},
 		},
@@ -251,7 +249,7 @@ func TestList(t *testing.T) {
 					return &mockRows{
 						data:   [][]any{},
 						index:  0,
-						err:    pgx.ErrNoRows,
+						err:    ErrQuery,
 						closed: true,
 					}, nil
 				},
@@ -304,7 +302,7 @@ func TestList(t *testing.T) {
 			gen:         &mockNanoID{},
 			conn: &mockDatabaseConn{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
-					return &mockRows{data: [][]any{}, err: pgx.ErrTxClosed}, nil
+					return &mockRows{data: [][]any{}, err: ErrScan}, nil
 				},
 			},
 		},
@@ -338,7 +336,7 @@ func TestDelete(t *testing.T) {
 			gen:             &mockNanoID{},
 			conn: &mockDatabaseConn{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(pgconn.NewCommandTag("DELETE 1")), nil
+					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 1}), nil
 				},
 			},
 		},
@@ -350,7 +348,7 @@ func TestDelete(t *testing.T) {
 			gen:             &mockNanoID{},
 			conn: &mockDatabaseConn{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(pgconn.NewCommandTag("DELETE 0")), nil
+					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), nil
 				},
 			},
 		},
@@ -362,7 +360,7 @@ func TestDelete(t *testing.T) {
 			gen:             &mockNanoID{},
 			conn: &mockDatabaseConn{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(pgconn.NewCommandTag("DELETE 0")), pgx.ErrNoRows
+					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), ErrNotFound
 				},
 			},
 		},
@@ -374,7 +372,7 @@ func TestDelete(t *testing.T) {
 			gen:             &mockNanoID{},
 			conn: &mockDatabaseConn{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(pgconn.NewCommandTag("DELETE 0")), nil
+					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), nil
 				},
 			},
 		},
