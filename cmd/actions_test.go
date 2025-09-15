@@ -416,6 +416,27 @@ func TestListAction(t *testing.T) {
 			},
 		},
 		{
+			name:   "success when limit max is zero",
+			offset: 0,
+			limit:  2,
+			action: NewActions(0),
+			buf:    bytes.Buffer{},
+			expectedResult: []Result{
+				{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
+				{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
+			},
+			isError:       false,
+			expectedError: nil,
+			svc: &mockedShortener{
+				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
+					return []shortener.URLItem{
+						{ID: 1, OriginalURL: "https://anewball.com", ShortCode: "nMHdgTh", CreatedAt: time.Date(2025, time.August, 25, 14, 30, 0, 0, time.UTC), ExpiresAt: nil},
+						{ID: 2, OriginalURL: "https://jayden.newball.com", ShortCode: "k5aBWD5", CreatedAt: time.Date(2025, time.August, 25, 14, 3, 0, 0, time.UTC), ExpiresAt: nil},
+					}, nil
+				},
+			},
+		},
+		{
 			name:           "limit less than zero",
 			offset:         0,
 			limit:          -2,
