@@ -79,6 +79,7 @@ func setupViper() map[string]string {
 		"DB_MAX_CONN_LIFETIME",
 		"DB_MAX_CONN_IDLE_TIME",
 		"DB_URL",
+		"LIST_MAX_LIMIT",
 	}
 
 	for _, k := range keys {
