@@ -82,7 +82,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	const maxLimit = 50
+	const maxLimit = 500
 	if limit <= 0 || limit > maxLimit {
 		return fmt.Errorf("%w: %d", ErrLimit, limit)
 	}
