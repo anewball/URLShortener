@@ -473,6 +473,17 @@ func TestListAction(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:           "when limit exceeds max",
+			offset:         -2,
+			limit:          21,
+			action:         NewActions(20),
+			buf:            bytes.Buffer{},
+			expectedResult: []Result{},
+			isError:        true,
+			expectedError:  ErrLimit,
+			svc:            &mockedShortener{},
+		},
 	}
 
 	for _, tc := range testCases {
