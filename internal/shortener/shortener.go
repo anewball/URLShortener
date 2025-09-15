@@ -8,8 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anewball/urlshortener/internal/db"
-	"github.com/jackc/pgx/v5"
+	"github.com/anewball/urlshortener/internal/dbiface"
 )
 
 const maxURLLength = 2048
@@ -42,7 +41,7 @@ type URLShortener interface {
 var _ URLShortener = (*shortener)(nil)
 
 type shortener struct {
-	db  db.Querier
+	db  dbiface.Querier
 	gen NanoID
 }
 
@@ -54,14 +53,14 @@ type URLItem struct {
 	ExpiresAt   *time.Time
 }
 
-func New(db db.Querier, gen NanoID) (URLShortener, error) {
-	if db == nil {
+func New(q dbiface.Querier, gen NanoID) (URLShortener, error) {
+	if q == nil {
 		return nil, fmt.Errorf("%w", ErrDBNil)
 	}
 	if gen == nil {
 		return nil, fmt.Errorf("%w", ErrNanoIDNil)
 	}
-	return &shortener{db: db, gen: gen}, nil
+	return &shortener{db: q, gen: gen}, nil
 }
 
 const (
@@ -100,7 +99,7 @@ func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	var originalURL string
 	err := s.db.QueryRow(ctx, GetQuery, shortCode).Scan(&originalURL)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if errors.Is(err, ErrNotFound) {
 			return empty, fmt.Errorf("%w: %v", ErrNotFound, shortCode)
 		}
 		return empty, fmt.Errorf("%w: %v", ErrQuery, shortCode)
