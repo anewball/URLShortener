@@ -37,20 +37,20 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	conn, err := db.NewPool(ctx, cfg)
+	querier, err := db.NewQuerier(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	log.Println("Connected to database successfully")
 	defer func() {
-		conn.Close()
+		querier.Close()
 		log.Println("Database connection pool closed")
 	}()
 
 	actions := cmd.NewActions()
 
 	gen := shortener.NewNanoID(shortener.Alphabet)
-	svc, err := shortener.New(conn, gen)
+	svc, err := shortener.New(querier, gen)
 	if err != nil {
 		return err
 	}
