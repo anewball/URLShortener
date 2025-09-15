@@ -17,6 +17,7 @@ type Config struct {
 	MinConns        int32
 	MaxConnLifetime time.Duration
 	MaxConnIdleTime time.Duration
+	ListMaxLimit    int
 }
 
 type Builder struct {
@@ -59,6 +60,11 @@ func (b *Builder) FromEnv() *Builder {
 	if v, err := b.en.Get("DB_MAX_CONN_IDLE_TIME"); err == nil {
 		if d, err := time.ParseDuration(v); err == nil {
 			b.db.MaxConnIdleTime = d
+		}
+	}
+	if v, err := b.en.Get("LIST_MAX_LIMIT"); err == nil {
+		if n, err := strconv.Atoi(v); err == nil {
+			b.db.ListMaxLimit = n
 		}
 	}
 	return b
