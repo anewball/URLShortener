@@ -29,10 +29,12 @@ type Actions interface {
 	DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
 }
 
-type actions struct{}
+type actions struct {
+	listMaxLimit int
+}
 
-func NewActions() Actions {
-	return &actions{}
+func NewActions(listMaxLimit int) Actions {
+	return &actions{listMaxLimit: listMaxLimit}
 }
 
 func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
