@@ -49,7 +49,7 @@ func run() error {
 		log.Println("Database connection pool closed")
 	}()
 
-	actions := cmd.NewActions()
+	actions := cmd.NewActions(cfg.ListMaxLimit)
 
 	gen := shortener.NewNanoID(shortener.Alphabet)
 	svc, err := shortener.New(querier, gen)
