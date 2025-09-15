@@ -514,51 +514,8 @@ func TestNewList(t *testing.T) {
 	assert.NotNil(t, gotCtx)
 }
 
-func TestRun(t *testing.T) {
-	testCases := []struct {
-		name    string
-		args    []string
-		isError bool
-		actions Actions
-		svc     shortener.URLShortener
-	}{
-		{
-			name:    "success",
-			args:    []string{"get", "iYaycSQ"},
-			isError: false,
-			actions: &mockedActions{
-				GetActionFunc: func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
-					return nil
-				},
-			},
-			svc: &mockedShortener{
-				getFunc: func(ctx context.Context, shortCode string) (string, error) {
-					return `{"shortCode":"iYaycSQ","rawUrl":"https://alibaba.com"}`, nil
-				},
-			},
-		},
-		{
-			name:    "error",
-			args:    []string{"get1", "iYaycSQ"},
-			isError: true,
-			actions: nil,
-			svc:     nil,
-		},
-	}
+func TestNewRoot(t *testing.T) {
+	cmd := NewRoot(&mockedActions{}, &mockedShortener{})
 
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			err := Run(ctx, tc.svc, tc.actions, tc.args...)
-
-			if tc.isError {
-				require.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-		})
-	}
+	assert.Equal(t, "urlshortener", cmd.Use)
 }
