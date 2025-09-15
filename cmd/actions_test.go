@@ -29,7 +29,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:           "success",
 			args:           []string{"https://example.com"},
-			action:         NewActions(),
+			action:         NewActions(20),
 			buf:            bytes.Buffer{},
 			expectedResult: Result{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
 			isError:        false,
@@ -43,7 +43,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:          "error produced",
 			args:          []string{"https://example.com"},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrAdd,
@@ -56,7 +56,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:          "error empty args",
 			args:          []string{},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrLenZero,
@@ -147,7 +147,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:           "success",
 			args:           []string{"Hpa3t2B"},
-			action:         NewActions(),
+			action:         NewActions(20),
 			buf:            bytes.Buffer{},
 			expectedResult: Result{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
 			isError:        false,
@@ -161,7 +161,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:          "error produced",
 			args:          []string{"Hpa3t2B"},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrGet,
@@ -174,7 +174,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:          "error empty args",
 			args:          []string{},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrLenZero,
@@ -265,7 +265,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:           "success",
 			args:           []string{"Hpa3t2B"},
-			action:         NewActions(),
+			action:         NewActions(20),
 			buf:            bytes.Buffer{},
 			expectedResult: DeleteResponse{Deleted: true, ShortCode: "Hpa3t2B"},
 			isError:        false,
@@ -279,7 +279,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:          "error produced",
 			args:          []string{"Hpa3t2B"},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrDelete,
@@ -292,7 +292,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:          "error empty args",
 			args:          []string{},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrLenZero,
@@ -305,7 +305,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:          "when row does not exists",
 			args:          []string{"Hpa3t2B"},
-			action:        NewActions(),
+			action:        NewActions(20),
 			buf:           bytes.Buffer{},
 			isError:       true,
 			expectedError: ErrNotFound,
@@ -398,7 +398,7 @@ func TestListAction(t *testing.T) {
 			name:   "success",
 			offset: 0,
 			limit:  2,
-			action: NewActions(),
+			action: NewActions(20),
 			buf:    bytes.Buffer{},
 			expectedResult: []Result{
 				{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
@@ -419,7 +419,7 @@ func TestListAction(t *testing.T) {
 			name:           "limit less than zero",
 			offset:         0,
 			limit:          -2,
-			action:         NewActions(),
+			action:         NewActions(20),
 			buf:            bytes.Buffer{},
 			expectedResult: []Result{},
 			isError:        true,
@@ -430,7 +430,7 @@ func TestListAction(t *testing.T) {
 			name:           "offset less than zero",
 			offset:         -2,
 			limit:          2,
-			action:         NewActions(),
+			action:         NewActions(20),
 			buf:            bytes.Buffer{},
 			expectedResult: []Result{},
 			isError:        true,
@@ -441,7 +441,7 @@ func TestListAction(t *testing.T) {
 			name:           "list returned error",
 			offset:         0,
 			limit:          2,
-			action:         NewActions(),
+			action:         NewActions(20),
 			buf:            bytes.Buffer{},
 			expectedResult: []Result{},
 			isError:        true,
