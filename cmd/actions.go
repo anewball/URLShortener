@@ -80,6 +80,13 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	return encoder.Encode(result)
 }
 
+type ListResponse struct {
+	Items  []Result `json:"items"`
+	Count  int      `json:"count"`
+	Limit  int      `json:"limit"`
+	Offset int      `json:"offset"`
+}
+
 func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -107,10 +114,17 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		results = append(results, Result{ShortCode: u.ShortCode, RawURL: u.OriginalURL})
 	}
 
+	resp := ListResponse{
+		Items:  results,
+		Count:  len(results),
+		Limit:  limit,
+		Offset: offset,
+	}
+
 	encoder := json.NewEncoder(out)
 	encoder.SetEscapeHTML(false)
 
-	return encoder.Encode(results)
+	return encoder.Encode(resp)
 }
 
 func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
