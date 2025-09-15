@@ -48,7 +48,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	arg := args[0]
 	shortCode, err := svc.Add(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("%w", ErrAdd)
+		return fmt.Errorf("%w: %v", ErrAdd, err)
 	}
 
 	result := Result{ShortCode: shortCode, RawURL: arg}
