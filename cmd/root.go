@@ -1,17 +1,8 @@
 package cmd
 
 import (
-	"context"
-	"log"
-	"os"
-
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
-)
-
-var (
-	actionsInstance Actions
-	svcInstance     shortener.URLShortener
 )
 
 type Result struct {
@@ -24,7 +15,7 @@ type DeleteResponse struct {
 	ShortCode string `json:"shortCode"`
 }
 
-func NewRoot() *cobra.Command {
+func NewRoot(acts Actions, svc shortener.URLShortener) *cobra.Command {
 	var cfgFile string
 
 	rootCmd := &cobra.Command{
@@ -39,24 +30,7 @@ func NewRoot() *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
 	rootCmd.PersistentFlags().String("author", "Andy Newball", "author of the URL shortener")
 
-	rootCmd.AddCommand(NewAdd(actionsInstance, svcInstance), NewDelete(actionsInstance, svcInstance), NewGet(actionsInstance, svcInstance), NewList(actionsInstance, svcInstance))
+	rootCmd.AddCommand(NewAdd(acts, svc), NewDelete(acts, svc), NewGet(acts, svc), NewList(acts, svc))
 
 	return rootCmd
-}
-
-func Run(ctx context.Context, svc shortener.URLShortener, actions Actions, args ...string) error {
-	log.SetOutput(os.Stderr)
-
-	actionsInstance = actions
-	svcInstance = svc
-
-	root := NewRoot()
-	root.SetContext(ctx)
-	root.SetArgs(args)
-
-	if err := root.Execute(); err != nil {
-		return err
-	}
-
-	return nil
 }
