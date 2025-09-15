@@ -26,6 +26,8 @@ func main() {
 }
 
 func run() error {
+	log.SetOutput(os.Stderr)
+
 	envMap := setupViper()
 
 	en := env.New(envMap)
@@ -55,7 +57,11 @@ func run() error {
 		return err
 	}
 
-	return cmd.Run(ctx, svc, actions)
+	root := cmd.NewRoot(actions, svc)
+	root.SetContext(ctx)
+	root.SetArgs(os.Args[1:])
+
+	return root.Execute()
 }
 
 func setupViper() map[string]string {
