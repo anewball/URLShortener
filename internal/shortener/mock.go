@@ -5,26 +5,25 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/anewball/urlshortener/internal/dbiface"
 )
 
 type mockDatabaseConn struct {
-	ExecFunc     func(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	QueryRowFunc func(ctx context.Context, sql string, args ...any) pgx.Row
-	QueryFunc    func(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	ExecFunc     func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error)
+	QueryRowFunc func(ctx context.Context, sql string, args ...any) dbiface.Row
+	QueryFunc    func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error)
 	CloseFunc    func()
 }
 
-func (m *mockDatabaseConn) QueryRow(ctx context.Context, sql string, args ...any) pgx.Row {
+func (m *mockDatabaseConn) QueryRow(ctx context.Context, sql string, args ...any) dbiface.Row {
 	return m.QueryRowFunc(ctx, sql, args...)
 }
 
-func (m *mockDatabaseConn) Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error) {
+func (m *mockDatabaseConn) Exec(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
 	return m.ExecFunc(ctx, sql, arguments...)
 }
 
-func (m *mockDatabaseConn) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+func (m *mockDatabaseConn) Query(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 	return m.QueryFunc(ctx, sql, args...)
 }
 
@@ -61,31 +60,6 @@ type mockRows struct {
 	err        error
 	scanErrPos int // Position in data where Scan should fail
 	closed     bool
-}
-
-// CommandTag implements pgx.Rows.
-func (m *mockRows) CommandTag() pgconn.CommandTag {
-	panic("unimplemented")
-}
-
-// Conn implements pgx.Rows.
-func (m *mockRows) Conn() *pgx.Conn {
-	panic("unimplemented")
-}
-
-// FieldDescriptions implements pgx.Rows.
-func (m *mockRows) FieldDescriptions() []pgconn.FieldDescription {
-	panic("unimplemented")
-}
-
-// RawValues implements pgx.Rows.
-func (m *mockRows) RawValues() [][]byte {
-	panic("unimplemented")
-}
-
-// Values implements pgx.Rows.
-func (m *mockRows) Values() ([]any, error) {
-	panic("unimplemented")
 }
 
 func (m *mockRows) Next() bool {
