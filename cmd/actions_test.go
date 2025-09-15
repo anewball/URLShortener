@@ -390,7 +390,7 @@ func TestListAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedError  error
-		expectedResult []Result
+		expectedResult ListResponse
 		action         Actions
 		svc            shortener.URLShortener
 	}{
@@ -400,9 +400,11 @@ func TestListAction(t *testing.T) {
 			limit:  2,
 			action: NewActions(20),
 			buf:    bytes.Buffer{},
-			expectedResult: []Result{
-				{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
-				{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
+			expectedResult: ListResponse{
+				Items: []Result{
+					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
+					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
+				}, Count: 2, Limit: 2, Offset: 0,
 			},
 			isError:       false,
 			expectedError: nil,
@@ -421,9 +423,11 @@ func TestListAction(t *testing.T) {
 			limit:  2,
 			action: NewActions(0),
 			buf:    bytes.Buffer{},
-			expectedResult: []Result{
-				{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
-				{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
+			expectedResult: ListResponse{
+				Items: []Result{
+					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
+					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
+				}, Count: 2, Limit: 2, Offset: 0,
 			},
 			isError:       false,
 			expectedError: nil,
@@ -442,7 +446,7 @@ func TestListAction(t *testing.T) {
 			limit:          -2,
 			action:         NewActions(20),
 			buf:            bytes.Buffer{},
-			expectedResult: []Result{},
+			expectedResult: ListResponse{},
 			isError:        true,
 			expectedError:  ErrLimit,
 			svc:            &mockedShortener{},
@@ -453,7 +457,7 @@ func TestListAction(t *testing.T) {
 			limit:          2,
 			action:         NewActions(20),
 			buf:            bytes.Buffer{},
-			expectedResult: []Result{},
+			expectedResult: ListResponse{},
 			isError:        true,
 			expectedError:  ErrNegativeOffset,
 			svc:            &mockedShortener{},
@@ -464,7 +468,7 @@ func TestListAction(t *testing.T) {
 			limit:          2,
 			action:         NewActions(20),
 			buf:            bytes.Buffer{},
-			expectedResult: []Result{},
+			expectedResult: ListResponse{},
 			isError:        true,
 			expectedError:  ErrList,
 			svc: &mockedShortener{
@@ -479,7 +483,7 @@ func TestListAction(t *testing.T) {
 			limit:          21,
 			action:         NewActions(20),
 			buf:            bytes.Buffer{},
-			expectedResult: []Result{},
+			expectedResult: ListResponse{},
 			isError:        true,
 			expectedError:  ErrLimit,
 			svc:            &mockedShortener{},
@@ -502,7 +506,7 @@ func TestListAction(t *testing.T) {
 			got := tc.buf.String()
 			assert.NotEmpty(t, got)
 
-			var actualResult []Result
+			var actualResult ListResponse
 			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
 			assert.NoError(t, err)
 
