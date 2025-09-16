@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS url (
     id BIGSERIAL PRIMARY KEY,
-    original_url TEXT NOT NULL,
+    original_url TEXT UNIQUE NOT NULL,
     short_code VARCHAR(16) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     expires_at TIMESTAMPTZ
