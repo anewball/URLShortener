@@ -107,16 +107,16 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		max = defaultMax
 	}
 	if limit <= 0 || limit > max {
-		return fmt.Errorf("%w: %d", ErrLimit, limit)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %d", ErrLimit, limit).Error()})
 	}
 
 	if offset < 0 {
-		return fmt.Errorf("%w: %d", ErrNegativeOffset, offset)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %d", ErrNegativeOffset, offset).Error()})
 	}
 
 	urlItems, err := svc.List(ctx, limit, offset)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrList, err)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrList, err).Error()})
 	}
 
 	var results []ResultResponse = make([]ResultResponse, 0, len(urlItems))
