@@ -2,12 +2,12 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/jsonutil"
 	"github.com/anewball/urlshortener/internal/shortener"
 )
 
@@ -51,12 +51,9 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 		return fmt.Errorf("%w: %v", ErrAdd, err)
 	}
 
-	result := Result{ShortCode: shortCode, RawURL: arg}
+	response := Result{ShortCode: shortCode, RawURL: arg}
 
-	encoder := json.NewEncoder(out)
-	encoder.SetEscapeHTML(false)
-
-	return encoder.Encode(result)
+	return jsonutil.WriteJSON(out, response)
 }
 
 func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
@@ -73,11 +70,9 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 		return fmt.Errorf("%w: %v", ErrGet, err)
 	}
 
-	result := Result{ShortCode: arg, RawURL: url}
-	encoder := json.NewEncoder(out)
-	encoder.SetEscapeHTML(false)
+	response := Result{ShortCode: arg, RawURL: url}
 
-	return encoder.Encode(result)
+	return jsonutil.WriteJSON(out, response)
 }
 
 type ListResponse struct {
@@ -114,17 +109,14 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		results = append(results, Result{ShortCode: u.ShortCode, RawURL: u.OriginalURL})
 	}
 
-	resp := ListResponse{
+	response := ListResponse{
 		Items:  results,
 		Count:  len(results),
 		Limit:  limit,
 		Offset: offset,
 	}
 
-	encoder := json.NewEncoder(out)
-	encoder.SetEscapeHTML(false)
-
-	return encoder.Encode(resp)
+	return jsonutil.WriteJSON(out, response)
 }
 
 func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
@@ -149,8 +141,5 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	response.Deleted = deleted
 	response.ShortCode = shortCode
 
-	encoder := json.NewEncoder(out)
-	encoder.SetEscapeHTML(false)
-
-	return encoder.Encode(response)
+	return jsonutil.WriteJSON(out, response)
 }
