@@ -85,7 +85,7 @@ func TestAdd(t *testing.T) {
 					return "abc123", nil
 				},
 			},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
 					return &mockRow{result: []any{"abc123"}}
 				},
@@ -97,7 +97,7 @@ func TestAdd(t *testing.T) {
 			expectedErr:       ErrIsValidURL,
 			expectedShortCode: "",
 			gen:               &mockNanoID{},
-			querier:           &mockDatabaseConn{},
+			querier:           &mockQuerier{},
 		},
 		{
 			name:              "codeGen error",
@@ -109,7 +109,7 @@ func TestAdd(t *testing.T) {
 					return "", fmt.Errorf("codeGen error")
 				},
 			},
-			querier: &mockDatabaseConn{},
+			querier: &mockQuerier{},
 		},
 		{
 			name:              "exec failure",
@@ -121,7 +121,7 @@ func TestAdd(t *testing.T) {
 					return "abc123", nil
 				},
 			},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
 					return &mockRow{err: errors.New("database error")}
 				},
@@ -156,7 +156,7 @@ func TestGet(t *testing.T) {
 			expectedErr:    nil,
 			expectedRawURL: "http://example.com",
 			gen:            &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
 					return &mockRow{result: []any{"http://example.com"}}
 				},
@@ -167,7 +167,7 @@ func TestGet(t *testing.T) {
 			shortCode:   "",
 			expectedErr: ErrEmptyCode,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
 					return &mockRow{err: fmt.Errorf("short URL cannot be empty")}
 				},
@@ -178,7 +178,7 @@ func TestGet(t *testing.T) {
 			shortCode:   "nonexistent",
 			expectedErr: ErrNotFound,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
 					return &mockRow{err: ErrNotFound}
 				},
@@ -189,7 +189,7 @@ func TestGet(t *testing.T) {
 			shortCode:   "nonexistent",
 			expectedErr: ErrQuery,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
 					return &mockRow{err: ErrQuery}
 				},
@@ -227,7 +227,7 @@ func TestList(t *testing.T) {
 				{uint64(2), "http://example.com/2", "GL9VeCb", time.Date(2025, 8, 20, 12, 5, 0, 0, time.UTC), (*time.Time)(nil)},
 			},
 			gen: &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return &mockRows{
 						data: [][]any{
@@ -244,7 +244,7 @@ func TestList(t *testing.T) {
 			limit: 10, offset: 0,
 			expectedErr: ErrQuery,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return &mockRows{
 						data:   [][]any{},
@@ -260,7 +260,7 @@ func TestList(t *testing.T) {
 			limit: 10, offset: 0,
 			expectedErr: ErrQuery,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return nil, fmt.Errorf("query error")
 				},
@@ -271,7 +271,7 @@ func TestList(t *testing.T) {
 			limit: 10, offset: 0,
 			expectedErr: ErrScan,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return &mockRows{
 						data: [][]any{
@@ -289,7 +289,7 @@ func TestList(t *testing.T) {
 			expectedErr:   nil,
 			gen:           &mockNanoID{},
 			expectedItems: []URLItem{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return &mockRows{data: [][]any{}}, nil
 				},
@@ -300,7 +300,7 @@ func TestList(t *testing.T) {
 			limit: 10, offset: 0,
 			expectedErr: ErrQuery,
 			gen:         &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return &mockRows{data: [][]any{}, err: ErrScan}, nil
 				},
@@ -334,7 +334,7 @@ func TestDelete(t *testing.T) {
 			expectedDeleted: true,
 			expectedErr:     nil,
 			gen:             &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
 					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 1}), nil
 				},
@@ -346,7 +346,7 @@ func TestDelete(t *testing.T) {
 			expectedDeleted: false,
 			expectedErr:     ErrEmptyCode,
 			gen:             &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
 					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), nil
 				},
@@ -358,7 +358,7 @@ func TestDelete(t *testing.T) {
 			expectedDeleted: false,
 			expectedErr:     ErrExec,
 			gen:             &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
 					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), ErrNotFound
 				},
@@ -370,7 +370,7 @@ func TestDelete(t *testing.T) {
 			expectedDeleted: false,
 			expectedErr:     ErrNotFound,
 			gen:             &mockNanoID{},
-			querier: &mockDatabaseConn{
+			querier: &mockQuerier{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
 					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), nil
 				},
@@ -399,7 +399,7 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 	}{
 		{
 			name:        "success",
-			db:          &mockDatabaseConn{},
+			db:          &mockQuerier{},
 			gen:         &mockNanoID{},
 			expectedErr: nil,
 			isErrNil:    true,
@@ -413,7 +413,7 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 		},
 		{
 			name:        "error when gen is nil",
-			db:          &mockDatabaseConn{},
+			db:          &mockQuerier{},
 			gen:         nil,
 			expectedErr: ErrNanoIDNil,
 			isErrNil:    false,
@@ -436,7 +436,7 @@ func TestNew_ReturnsError_WhenDBIsNil(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	db := &mockDatabaseConn{
+	db := &mockQuerier{
 		CloseFunc: func() {
 			log.Println("mock db closed")
 		},

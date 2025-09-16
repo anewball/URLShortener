@@ -8,26 +8,26 @@ import (
 	"github.com/anewball/urlshortener/internal/dbiface"
 )
 
-type mockDatabaseConn struct {
+type mockQuerier struct {
 	ExecFunc     func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error)
 	QueryRowFunc func(ctx context.Context, sql string, args ...any) dbiface.Row
 	QueryFunc    func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error)
 	CloseFunc    func()
 }
 
-func (m *mockDatabaseConn) QueryRow(ctx context.Context, sql string, args ...any) dbiface.Row {
+func (m *mockQuerier) QueryRow(ctx context.Context, sql string, args ...any) dbiface.Row {
 	return m.QueryRowFunc(ctx, sql, args...)
 }
 
-func (m *mockDatabaseConn) Exec(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
+func (m *mockQuerier) Exec(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
 	return m.ExecFunc(ctx, sql, arguments...)
 }
 
-func (m *mockDatabaseConn) Query(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
+func (m *mockQuerier) Query(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 	return m.QueryFunc(ctx, sql, args...)
 }
 
-func (m *mockDatabaseConn) Close() {
+func (m *mockQuerier) Close() {
 	m.CloseFunc()
 }
 
