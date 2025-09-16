@@ -76,13 +76,13 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	defer cancel()
 
 	if len(args) == 0 {
-		return fmt.Errorf("%w", ErrLenZero)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: ErrLenZero.Error()})
 	}
 
 	arg := args[0]
 	url, err := svc.Get(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrGet, err)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrGet, err).Error()})
 	}
 
 	response := ResultResponse{ShortCode: arg, RawURL: url}
