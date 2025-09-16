@@ -86,8 +86,8 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			conn: &mockDatabaseConn{
-				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 1}), nil
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
+					return &mockRow{result: []any{"abc123"}}
 				},
 			},
 		},
@@ -122,8 +122,8 @@ func TestAdd(t *testing.T) {
 				},
 			},
 			conn: &mockDatabaseConn{
-				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {
-					return dbiface.CommandResult(&mockCommandResult{rowsAffected: 0}), errors.New("database error")
+				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
+					return &mockRow{err: errors.New("database error")}
 				},
 			},
 		},
