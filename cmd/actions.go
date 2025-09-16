@@ -139,16 +139,16 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	defer cancel()
 
 	if len(args) == 0 {
-		return fmt.Errorf("%w", ErrLenZero)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: ErrLenZero.Error()})
 	}
 	shortCode := args[0]
 
 	deleted, err := svc.Delete(ctx, shortCode)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrDelete, err)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrDelete, err).Error()})
 	}
 	if !deleted {
-		return fmt.Errorf("%w: %q", ErrNotFound, shortCode)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %q", ErrNotFound, shortCode).Error()})
 	}
 
 	var response DeleteResponse
