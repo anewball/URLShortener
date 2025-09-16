@@ -5,16 +5,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ResultResponse struct {
-	ShortCode string `json:"shortCode"`
-	RawURL    string `json:"rawUrl"`
-}
-
-type DeleteResponse struct {
-	Deleted   bool   `json:"deleted"`
-	ShortCode string `json:"shortCode"`
-}
-
 func NewRoot(acts Actions, svc shortener.URLShortener) *cobra.Command {
 	var cfgFile string
 

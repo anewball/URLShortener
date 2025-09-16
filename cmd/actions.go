@@ -22,6 +22,16 @@ var (
 	ErrList           = errors.New("failed to list URLs")
 )
 
+type ResultResponse struct {
+	ShortCode string `json:"shortCode"`
+	RawURL    string `json:"rawUrl"`
+}
+
+type DeleteResponse struct {
+	Deleted   bool   `json:"deleted"`
+	ShortCode string `json:"shortCode"`
+}
+
 type Actions interface {
 	AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
 	GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
