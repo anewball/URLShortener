@@ -64,7 +64,7 @@ func New(q dbiface.Querier, gen NanoID) (URLShortener, error) {
 }
 
 const (
-	AddQuery    = "INSERT INTO url (original_url, short_code) VALUES ($1, $2);"
+	AddQuery    = "SELECT add_url($1, $2);"
 	GetQuery    = "SELECT original_url FROM url WHERE short_code = $1 AND (expires_at IS NULL OR expires_at > now());"
 	ListQuery   = "SELECT id, original_url, short_code, created_at, expires_at FROM url WHERE (expires_at IS NULL OR expires_at > now()) ORDER BY created_at DESC LIMIT $1 OFFSET $2;"
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1;"
@@ -78,12 +78,13 @@ func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 		return empty, fmt.Errorf("%w: %v", ErrIsValidURL, err)
 	}
 
-	id, err := s.gen.Generate(codeLen)
+	genID, err := s.gen.Generate(codeLen)
 	if err != nil {
 		return empty, fmt.Errorf("%w: %v", ErrGenerate, err)
 	}
 
-	_, err = s.db.Exec(ctx, AddQuery, rawURL, id)
+	var id string
+	err = s.db.QueryRow(ctx, AddQuery, rawURL, genID).Scan(&id)
 	if err != nil {
 		return empty, fmt.Errorf("%w: %v", ErrExec, err)
 	}
