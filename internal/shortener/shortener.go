@@ -29,6 +29,7 @@ var (
 	ErrScan        = errors.New("failed to scan row")
 	ErrDBNil       = errors.New("database connection is nil")
 	ErrNanoIDNil   = errors.New("NanoID generator is nil")
+	ErrQueryRow    = errors.New("no rows in result set")
 )
 
 type URLShortener interface {
@@ -86,7 +87,7 @@ func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 	var id string
 	err = s.db.QueryRow(ctx, AddQuery, rawURL, genID).Scan(&id)
 	if err != nil {
-		return empty, fmt.Errorf("%w: %v", ErrExec, err)
+		return empty, fmt.Errorf("%w: %v", ErrQueryRow, err)
 	}
 
 	return id, nil
