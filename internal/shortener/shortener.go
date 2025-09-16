@@ -66,7 +66,7 @@ func New(q dbiface.Querier, gen NanoID) (URLShortener, error) {
 const (
 	AddQuery    = "INSERT INTO url (original_url, short_code) VALUES ($1, $2);"
 	GetQuery    = "SELECT original_url FROM url WHERE short_code = $1 AND (expires_at IS NULL OR expires_at > now());"
-	ListQuery   = "SELECT id, original_url, short_code, created_at, expires_at FROM url ORDER BY created_at DESC LIMIT $1 OFFSET $2;"
+	ListQuery   = "SELECT id, original_url, short_code, created_at, expires_at FROM url WHERE (expires_at IS NULL OR expires_at > now()) ORDER BY created_at DESC LIMIT $1 OFFSET $2;"
 	DeleteQuery = "DELETE FROM url WHERE short_code = $1;"
 	empty       = ""
 	codeLen     = 7
