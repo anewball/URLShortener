@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type Result struct {
+type ResultResponse struct {
 	ShortCode string `json:"shortCode"`
 	RawURL    string `json:"rawUrl"`
 }

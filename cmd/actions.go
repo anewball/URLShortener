@@ -51,7 +51,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 		return fmt.Errorf("%w: %v", ErrAdd, err)
 	}
 
-	response := Result{ShortCode: shortCode, RawURL: arg}
+	response := ResultResponse{ShortCode: shortCode, RawURL: arg}
 
 	return jsonutil.WriteJSON(out, response)
 }
@@ -70,16 +70,16 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 		return fmt.Errorf("%w: %v", ErrGet, err)
 	}
 
-	response := Result{ShortCode: arg, RawURL: url}
+	response := ResultResponse{ShortCode: arg, RawURL: url}
 
 	return jsonutil.WriteJSON(out, response)
 }
 
 type ListResponse struct {
-	Items  []Result `json:"items"`
-	Count  int      `json:"count"`
-	Limit  int      `json:"limit"`
-	Offset int      `json:"offset"`
+	Items  []ResultResponse `json:"items"`
+	Count  int              `json:"count"`
+	Limit  int              `json:"limit"`
+	Offset int              `json:"offset"`
 }
 
 func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
@@ -104,9 +104,9 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		return fmt.Errorf("%w: %v", ErrList, err)
 	}
 
-	var results []Result = make([]Result, 0, len(urlItems))
+	var results []ResultResponse = make([]ResultResponse, 0, len(urlItems))
 	for _, u := range urlItems {
-		results = append(results, Result{ShortCode: u.ShortCode, RawURL: u.OriginalURL})
+		results = append(results, ResultResponse{ShortCode: u.ShortCode, RawURL: u.OriginalURL})
 	}
 
 	response := ListResponse{

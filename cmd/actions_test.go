@@ -22,7 +22,7 @@ func TestAddActions(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedError  error
-		expectedResult Result
+		expectedResult ResultResponse
 		action         Actions
 		svc            shortener.URLShortener
 	}{
@@ -31,7 +31,7 @@ func TestAddActions(t *testing.T) {
 			args:           []string{"https://example.com"},
 			action:         NewActions(20),
 			buf:            bytes.Buffer{},
-			expectedResult: Result{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
+			expectedResult: ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
 			isError:        false,
 			expectedError:  nil,
 			svc: &mockedShortener{
@@ -84,7 +84,7 @@ func TestAddActions(t *testing.T) {
 			got := tc.buf.String()
 			assert.NotEmpty(t, got)
 
-			var actualResult Result
+			var actualResult ResultResponse
 			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
 			assert.NoError(t, err)
 
@@ -140,7 +140,7 @@ func TestGetAction(t *testing.T) {
 		buf            bytes.Buffer
 		isError        bool
 		expectedError  error
-		expectedResult Result
+		expectedResult ResultResponse
 		action         Actions
 		svc            shortener.URLShortener
 	}{
@@ -149,7 +149,7 @@ func TestGetAction(t *testing.T) {
 			args:           []string{"Hpa3t2B"},
 			action:         NewActions(20),
 			buf:            bytes.Buffer{},
-			expectedResult: Result{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
+			expectedResult: ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
 			isError:        false,
 			expectedError:  nil,
 			svc: &mockedShortener{
@@ -202,7 +202,7 @@ func TestGetAction(t *testing.T) {
 			got := tc.buf.String()
 			assert.NotEmpty(t, got)
 
-			var actualResult Result
+			var actualResult ResultResponse
 			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
 			assert.NoError(t, err)
 
@@ -401,7 +401,7 @@ func TestListAction(t *testing.T) {
 			action: NewActions(20),
 			buf:    bytes.Buffer{},
 			expectedResult: ListResponse{
-				Items: []Result{
+				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
 					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
 				}, Count: 2, Limit: 2, Offset: 0,
@@ -424,7 +424,7 @@ func TestListAction(t *testing.T) {
 			action: NewActions(0),
 			buf:    bytes.Buffer{},
 			expectedResult: ListResponse{
-				Items: []Result{
+				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
 					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
 				}, Count: 2, Limit: 2, Offset: 0,
