@@ -32,6 +32,11 @@ type DeleteResponse struct {
 	ShortCode string `json:"shortCode"`
 }
 
+type ErrorResponse struct {
+	Error   string `json:"error"`
+	Details string `json:"details,omitempty"`
+}
+
 type Actions interface {
 	AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
 	GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
