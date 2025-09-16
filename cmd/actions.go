@@ -57,13 +57,13 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	defer cancel()
 
 	if len(args) == 0 {
-		return fmt.Errorf("%w", ErrLenZero)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: ErrLenZero.Error()})
 	}
 
 	arg := args[0]
 	shortCode, err := svc.Add(ctx, arg)
 	if err != nil {
-		return fmt.Errorf("%w: %v", ErrAdd, err)
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrAdd, err).Error()})
 	}
 
 	response := ResultResponse{ShortCode: shortCode, RawURL: arg}
