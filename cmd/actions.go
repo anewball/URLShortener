@@ -13,13 +13,8 @@ import (
 
 var (
 	ErrLenZero        = errors.New("requires at least 1 arg(s), only received 0")
-	ErrAdd            = errors.New("failed to add URL")
-	ErrGet            = errors.New("failed to retrieve original URL")
-	ErrDelete         = errors.New("failed to delete URL")
-	ErrNotFound       = errors.New("no URL found for code")
 	ErrLimit          = errors.New("the limit has to be at least 1 and cannot exceeds")
 	ErrNegativeOffset = errors.New("offset cannot be negative")
-	ErrList           = errors.New("failed to list URLs")
 )
 
 type ResultResponse struct {
