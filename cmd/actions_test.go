@@ -173,6 +173,7 @@ func TestNewAdd(t *testing.T) {
 }
 
 func TestGetAction(t *testing.T) {
+	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                  string
 		args                  []string
@@ -185,10 +186,10 @@ func TestGetAction(t *testing.T) {
 	}{
 		{
 			name:                  "success",
-			args:                  []string{"Hpa3t2B"},
+			args:                  []string{shortCode},
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
-			expectedResult:        ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
+			expectedResult:        ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
 			isError:               false,
 			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
@@ -212,7 +213,7 @@ func TestGetAction(t *testing.T) {
 		},
 		{
 			name:                  "error empty short code",
-			args:                  []string{" "},
+			args:                  []string{""},
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
@@ -225,11 +226,11 @@ func TestGetAction(t *testing.T) {
 		},
 		{
 			name:                  "error not found",
-			args:                  []string{"Hpa3t2B"},
+			args:                  []string{shortCode},
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", "Hpa3t2B")},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", shortCode)},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrNotFound
@@ -238,7 +239,7 @@ func TestGetAction(t *testing.T) {
 		},
 		{
 			name:                  "error query",
-			args:                  []string{"Hpa3t2B"},
+			args:                  []string{shortCode},
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
@@ -251,7 +252,7 @@ func TestGetAction(t *testing.T) {
 		},
 		{
 			name:                  "error",
-			args:                  []string{"Hpa3t2B"},
+			args:                  []string{shortCode},
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
