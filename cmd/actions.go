@@ -175,7 +175,7 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 		}
 	}
 	if !deleted {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %q", ErrNotFound, shortCode).Error()})
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Problem deleting URL with short code %q", shortCode)})
 	}
 
 	var response DeleteResponse
