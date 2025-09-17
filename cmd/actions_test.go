@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -47,7 +48,7 @@ func TestAddActions(t *testing.T) {
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "requires at least 1 arg(s), only received 0"},
+			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", ErrLenZero
@@ -173,23 +174,23 @@ func TestNewAdd(t *testing.T) {
 
 func TestGetAction(t *testing.T) {
 	testCases := []struct {
-		name           string
-		args           []string
-		buf            bytes.Buffer
-		isError        bool
-		expectedError  error
-		expectedResult ResultResponse
-		action         Actions
-		svc            shortener.URLShortener
+		name                  string
+		args                  []string
+		buf                   bytes.Buffer
+		isError               bool
+		expectedErrorResponse ErrorResponse
+		expectedResult        ResultResponse
+		action                Actions
+		svc                   shortener.URLShortener
 	}{
 		{
-			name:           "success",
-			args:           []string{"Hpa3t2B"},
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
-			isError:        false,
-			expectedError:  nil,
+			name:                  "success",
+			args:                  []string{"Hpa3t2B"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			expectedResult:        ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
+			isError:               false,
+			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, shortCode string) (string, error) {
 					return "https://example.com", nil
@@ -197,28 +198,67 @@ func TestGetAction(t *testing.T) {
 			},
 		},
 		{
-			name:          "error produced",
-			args:          []string{"Hpa3t2B"},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrGet,
+			name:                  "zero args",
+			args:                  []string{},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
-					return "", errors.New("something went wrong")
+					return "", ErrLenZero
 				},
 			},
 		},
 		{
-			name:          "error empty args",
-			args:          []string{},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrLenZero,
+			name:                  "error empty short code",
+			args:                  []string{" "},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "A short code is required"},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
-					return "", errors.New("requires at least 1 arg(s), only received 0")
+					return "", shortener.ErrEmptyShortCode
+				},
+			},
+		},
+		{
+			name:                  "error not found",
+			args:                  []string{"Hpa3t2B"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", "Hpa3t2B")},
+			svc: &mockedShortener{
+				getFunc: func(ctx context.Context, url string) (string, error) {
+					return "", shortener.ErrNotFound
+				},
+			},
+		},
+		{
+			name:                  "error query",
+			args:                  []string{"Hpa3t2B"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "Failed to retrieve URL because of timeout"},
+			svc: &mockedShortener{
+				getFunc: func(ctx context.Context, url string) (string, error) {
+					return "", shortener.ErrQuery
+				},
+			},
+		},
+		{
+			name:                  "error",
+			args:                  []string{"Hpa3t2B"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "Something went wrong"},
+			svc: &mockedShortener{
+				getFunc: func(ctx context.Context, url string) (string, error) {
+					return "", errors.New("Something went wrong")
 				},
 			},
 		},
@@ -232,21 +272,18 @@ func TestGetAction(t *testing.T) {
 			err := tc.action.GetAction(ctx, &tc.buf, tc.svc, tc.args)
 
 			if tc.isError {
-				require.ErrorIs(t, err, tc.expectedError)
+				var actualError ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualError)
+				assert.Equal(t, tc.expectedErrorResponse, actualError)
 				return
 			}
 
 			assert.NoError(t, err)
-			got := tc.buf.String()
-			assert.NotEmpty(t, got)
 
 			var actualResult ResultResponse
-			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
-			assert.NoError(t, err)
+			jsonutil.ReadJSON(&tc.buf, &actualResult)
 
 			assert.Equal(t, tc.expectedResult, actualResult)
-
-			assert.True(t, strings.HasSuffix(got, "\n"))
 		})
 	}
 }
