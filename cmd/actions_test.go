@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/anewball/urlshortener/internal/jsonutil"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,23 +18,23 @@ import (
 
 func TestAddActions(t *testing.T) {
 	testCases := []struct {
-		name           string
-		args           []string
-		buf            bytes.Buffer
-		isError        bool
-		expectedError  error
-		expectedResult ResultResponse
-		action         Actions
-		svc            shortener.URLShortener
+		name                  string
+		args                  []string
+		buf                   bytes.Buffer
+		isError               bool
+		expectedErrorResponse ErrorResponse
+		expectedResult        ResultResponse
+		action                Actions
+		svc                   shortener.URLShortener
 	}{
 		{
-			name:           "success",
-			args:           []string{"https://example.com"},
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
-			isError:        false,
-			expectedError:  nil,
+			name:                  "success",
+			args:                  []string{"https://example.com"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			expectedResult:        ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
+			isError:               false,
+			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "Hpa3t2B", nil
@@ -41,28 +42,67 @@ func TestAddActions(t *testing.T) {
 			},
 		},
 		{
-			name:          "error produced",
-			args:          []string{"https://example.com"},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrAdd,
+			name:                  "zero args",
+			args:                  []string{},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "requires at least 1 arg(s), only received 0"},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
-					return "", errors.New("something went wrong")
+					return "", ErrLenZero
 				},
 			},
 		},
 		{
-			name:          "error empty args",
-			args:          []string{},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrLenZero,
+			name:                  "invalid url",
+			args:                  []string{"https://example.com"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "Invalid URL"},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
-					return "", errors.New("requires at least 1 arg(s), only received 0")
+					return "", shortener.ErrIsValidURL
+				},
+			},
+		},
+		{
+			name:                  "error empty args",
+			args:                  []string{"https://example.com"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "Failed to produce short code"},
+			svc: &mockedShortener{
+				addFunc: func(ctx context.Context, url string) (string, error) {
+					return "", shortener.ErrGenerate
+				},
+			},
+		},
+		{
+			name:                  "could not add url",
+			args:                  []string{"https://example.com"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "Failed to add URL, please try again"},
+			svc: &mockedShortener{
+				addFunc: func(ctx context.Context, url string) (string, error) {
+					return "", shortener.ErrQueryRow
+				},
+			},
+		},
+		{
+			name:                  "error not supported",
+			args:                  []string{"https://example.com"},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "Failed to add URL"},
+			svc: &mockedShortener{
+				addFunc: func(ctx context.Context, url string) (string, error) {
+					return "", errors.New("Failed to add URL")
 				},
 			},
 		},
@@ -76,13 +116,14 @@ func TestAddActions(t *testing.T) {
 			err := tc.action.AddAction(ctx, &tc.buf, tc.svc, tc.args)
 
 			if tc.isError {
-				require.ErrorIs(t, err, tc.expectedError)
+				var actualError ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualError)
+				assert.Equal(t, tc.expectedErrorResponse, actualError)
+
 				return
 			}
 
 			assert.NoError(t, err)
-			got := tc.buf.String()
-			assert.NotEmpty(t, got)
 
 			var actualResult ResultResponse
 			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
@@ -90,7 +131,7 @@ func TestAddActions(t *testing.T) {
 
 			assert.Equal(t, tc.expectedResult, actualResult)
 
-			assert.True(t, strings.HasSuffix(got, "\n"))
+			assert.True(t, strings.HasSuffix(tc.buf.String(), "\n"))
 		})
 	}
 }
