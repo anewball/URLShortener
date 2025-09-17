@@ -112,9 +112,9 @@ func TestAddActions(t *testing.T) {
 			err := tc.action.AddAction(ctx, &tc.buf, tc.svc, tc.args)
 
 			if tc.isError {
-				var actualError ErrorResponse
-				jsonutil.ReadJSON(&tc.buf, &actualError)
-				assert.Equal(t, tc.expectedErrorResponse, actualError)
+				var actualErrorResponse ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualErrorResponse)
+				assert.Equal(t, tc.expectedErrorResponse, actualErrorResponse)
 
 				return
 			}
