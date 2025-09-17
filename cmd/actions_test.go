@@ -266,18 +266,18 @@ func TestGetAction(t *testing.T) {
 			err := tc.action.GetAction(ctx, &tc.buf, tc.svc, tc.args)
 
 			if tc.isError {
-				var actualError ErrorResponse
-				jsonutil.ReadJSON(&tc.buf, &actualError)
-				assert.Equal(t, tc.expectedErrorResponse, actualError)
+				var actualErrorResponse ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualErrorResponse)
+				assert.Equal(t, tc.expectedErrorResponse, actualErrorResponse)
 				return
 			}
 
 			assert.NoError(t, err)
 
-			var actualResult ResultResponse
-			jsonutil.ReadJSON(&tc.buf, &actualResult)
+			var actualResultResponse ResultResponse
+			jsonutil.ReadJSON(&tc.buf, &actualResultResponse)
 
-			assert.Equal(t, tc.expectedResultResponse, actualResult)
+			assert.Equal(t, tc.expectedResultResponse, actualResultResponse)
 		})
 	}
 }
