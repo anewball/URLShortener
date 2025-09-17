@@ -91,7 +91,16 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	arg := args[0]
 	url, err := svc.Get(ctx, arg)
 	if err != nil {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrGet, err).Error()})
+		switch {
+		case errors.Is(err, shortener.ErrEmptyCode):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "A short code is required"})
+		case errors.Is(err, shortener.ErrNotFound):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", arg)})
+		case errors.Is(err, shortener.ErrQuery):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to retrieve URL because of timeout"})
+		default:
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Something went wrong"})
+		}
 	}
 
 	response := ResultResponse{ShortCode: arg, RawURL: url}
