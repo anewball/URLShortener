@@ -63,7 +63,16 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	arg := args[0]
 	shortCode, err := svc.Add(ctx, arg)
 	if err != nil {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrAdd, err).Error()})
+		switch {
+		case errors.Is(err, shortener.ErrIsValidURL):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Invalid URL"})
+		case errors.Is(err, shortener.ErrGenerate):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to produce short code"})
+		case errors.Is(err, shortener.ErrQueryRow):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to add URL, please try again"})
+		default:
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to add URL"})
+		}
 	}
 
 	response := ResultResponse{ShortCode: shortCode, RawURL: arg}
