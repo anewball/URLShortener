@@ -142,7 +142,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		case errors.Is(err, shortener.ErrRows):
 			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs when smarshal URLs with limit: %d and offset: %d", limit, offset)})
 		default:
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs on limit: %d and offset: %d", limit, offset)})
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs when retrieving URLs from limit: %d and offset: %d", limit, offset)})
 		}
 	}
 
