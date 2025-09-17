@@ -170,23 +170,23 @@ func TestNewAdd(t *testing.T) {
 func TestGetAction(t *testing.T) {
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
-		name                  string
-		args                  []string
-		buf                   bytes.Buffer
-		isError               bool
-		expectedErrorResponse ErrorResponse
-		expectedResult        ResultResponse
-		action                Actions
-		svc                   shortener.URLShortener
+		name                   string
+		args                   []string
+		buf                    bytes.Buffer
+		isError                bool
+		expectedErrorResponse  ErrorResponse
+		expectedResultResponse ResultResponse
+		action                 Actions
+		svc                    shortener.URLShortener
 	}{
 		{
-			name:                  "success",
-			args:                  []string{shortCode},
-			action:                NewActions(20),
-			buf:                   bytes.Buffer{},
-			expectedResult:        ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
-			isError:               false,
-			expectedErrorResponse: ErrorResponse{},
+			name:                   "success",
+			args:                   []string{shortCode},
+			action:                 NewActions(20),
+			buf:                    bytes.Buffer{},
+			expectedResultResponse: ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
+			isError:                false,
+			expectedErrorResponse:  ErrorResponse{},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, shortCode string) (string, error) {
 					return "https://example.com", nil
@@ -275,7 +275,7 @@ func TestGetAction(t *testing.T) {
 			var actualResult ResultResponse
 			jsonutil.ReadJSON(&tc.buf, &actualResult)
 
-			assert.Equal(t, tc.expectedResult, actualResult)
+			assert.Equal(t, tc.expectedResultResponse, actualResult)
 		})
 	}
 }
