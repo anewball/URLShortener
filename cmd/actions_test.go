@@ -494,7 +494,7 @@ func TestListAction(t *testing.T) {
 		buf                   bytes.Buffer
 		isError               bool
 		expectedErrorResponse ErrorResponse
-		expectedResponse      ListResponse
+		expectedListResponse  ListResponse
 		action                Actions
 		svc                   shortener.URLShortener
 	}{
@@ -504,7 +504,7 @@ func TestListAction(t *testing.T) {
 			limit:  2,
 			action: NewActions(listMaxLimit),
 			buf:    bytes.Buffer{},
-			expectedResponse: ListResponse{
+			expectedListResponse: ListResponse{
 				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
 					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
@@ -527,7 +527,7 @@ func TestListAction(t *testing.T) {
 			limit:  2,
 			action: NewActions(0),
 			buf:    bytes.Buffer{},
-			expectedResponse: ListResponse{
+			expectedListResponse: ListResponse{
 				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
 					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
@@ -550,7 +550,7 @@ func TestListAction(t *testing.T) {
 			limit:                 -2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
-			expectedResponse:      ListResponse{},
+			expectedListResponse:  ListResponse{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("%s: %d", ErrLimit.Error(), listMaxLimit)},
 			svc:                   &mockedShortener{},
@@ -561,7 +561,7 @@ func TestListAction(t *testing.T) {
 			limit:                 2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
-			expectedResponse:      ListResponse{},
+			expectedListResponse:  ListResponse{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %d", ErrNegativeOffset, -2).Error()},
 			svc:                   &mockedShortener{},
@@ -572,7 +572,7 @@ func TestListAction(t *testing.T) {
 			limit:                 2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
-			expectedResponse:      ListResponse{},
+			expectedListResponse:  ListResponse{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Failed to retrieve URLs with limit: %d and offset: %d", 2, 0)},
 			svc: &mockedShortener{
@@ -587,7 +587,7 @@ func TestListAction(t *testing.T) {
 			limit:                 2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
-			expectedResponse:      ListResponse{},
+			expectedListResponse:  ListResponse{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Failed to smarshal URLs with limit: %d and offset: %d", 2, 0)},
 			svc: &mockedShortener{
@@ -602,7 +602,7 @@ func TestListAction(t *testing.T) {
 			limit:                 2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
-			expectedResponse:      ListResponse{},
+			expectedListResponse:  ListResponse{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("An error occurs when smarshal URLs with limit: %d and offset: %d", 2, 0)},
 			svc: &mockedShortener{
@@ -617,7 +617,7 @@ func TestListAction(t *testing.T) {
 			limit:                 2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
-			expectedResponse:      ListResponse{},
+			expectedListResponse:  ListResponse{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("An error occurs when retrieving URLs from limit: %d and offset: %d", 2, 0)},
 			svc: &mockedShortener{
@@ -636,18 +636,18 @@ func TestListAction(t *testing.T) {
 			err := tc.action.ListAction(ctx, tc.limit, tc.offset, &tc.buf, tc.svc)
 
 			if tc.isError {
-				var actualError ErrorResponse
-				jsonutil.ReadJSON(&tc.buf, &actualError)
-				assert.Equal(t, tc.expectedErrorResponse, actualError)
+				var actualErrorResponse ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualErrorResponse)
+				assert.Equal(t, tc.expectedErrorResponse, actualErrorResponse)
 				return
 			}
 
 			assert.NoError(t, err)
 
-			var actualResponse ListResponse
-			jsonutil.ReadJSON(&tc.buf, &actualResponse)
+			var actualListResponse ListResponse
+			jsonutil.ReadJSON(&tc.buf, &actualListResponse)
 
-			assert.Equal(t, tc.expectedResponse, actualResponse)
+			assert.Equal(t, tc.expectedListResponse, actualListResponse)
 		})
 	}
 }
