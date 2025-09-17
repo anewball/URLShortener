@@ -169,6 +169,7 @@ func TestNewAdd(t *testing.T) {
 }
 
 func TestGetAction(t *testing.T) {
+	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                   string
@@ -183,7 +184,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                   "success",
 			args:                   []string{shortCode},
-			action:                 NewActions(20),
+			action:                 NewActions(listMaxLimit),
 			buf:                    bytes.Buffer{},
 			expectedResultResponse: ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
 			isError:                false,
@@ -197,7 +198,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "zero args",
 			args:                  []string{},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
@@ -219,7 +220,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "error not found",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", shortCode)},
@@ -232,7 +233,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "error query",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "Failed to retrieve URL because of timeout"},
@@ -245,7 +246,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "error",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "Something went wrong"},
