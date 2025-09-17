@@ -2,7 +2,6 @@ package shortener
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -114,7 +113,7 @@ func TestAdd(t *testing.T) {
 		{
 			name:              "exec failure",
 			rawURL:            "http://example.com",
-			expectedErr:       ErrExec,
+			expectedErr:       ErrQueryRow,
 			expectedShortCode: "",
 			gen: &mockNanoID{
 				GenerateFunc: func(n int) (string, error) {
@@ -123,7 +122,7 @@ func TestAdd(t *testing.T) {
 			},
 			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
-					return &mockRow{err: errors.New("database error")}
+					return &mockRow{err: ErrQueryRow}
 				},
 			},
 		},
@@ -242,14 +241,14 @@ func TestList(t *testing.T) {
 		{
 			name:  "rows error",
 			limit: 10, offset: 0,
-			expectedErr: ErrQuery,
+			expectedErr: ErrRows,
 			gen:         &mockNanoID{},
 			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
 					return &mockRows{
 						data:   [][]any{},
 						index:  0,
-						err:    ErrQuery,
+						err:    ErrRows,
 						closed: true,
 					}, nil
 				},
@@ -298,11 +297,11 @@ func TestList(t *testing.T) {
 		{
 			name:  "rows iteration error",
 			limit: 10, offset: 0,
-			expectedErr: ErrQuery,
+			expectedErr: ErrRows,
 			gen:         &mockNanoID{},
 			querier: &mockQuerier{
 				QueryFunc: func(ctx context.Context, sql string, args ...any) (dbiface.Rows, error) {
-					return &mockRows{data: [][]any{}, err: ErrScan}, nil
+					return &mockRows{data: [][]any{}, err: ErrRows}, nil
 				},
 			},
 		},
