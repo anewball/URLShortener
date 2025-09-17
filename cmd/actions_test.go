@@ -50,11 +50,7 @@ func TestAddActions(t *testing.T) {
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
-			svc: &mockedShortener{
-				addFunc: func(ctx context.Context, url string) (string, error) {
-					return "", ErrLenZero
-				},
-			},
+			svc:                   &mockedShortener{},
 		},
 		{
 			name:                  "invalid url",
