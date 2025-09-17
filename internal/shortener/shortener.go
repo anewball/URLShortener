@@ -30,6 +30,7 @@ var (
 	ErrDBNil          = errors.New("database connection is nil")
 	ErrNanoIDNil      = errors.New("NanoID generator is nil")
 	ErrQueryRow       = errors.New("no rows in result set")
+	ErrRows           = errors.New("rows produced an error")
 )
 
 type URLShortener interface {
@@ -127,7 +128,7 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%w: %v", ErrQuery, err)
+		return nil, fmt.Errorf("%w: %v", ErrRows, err)
 	}
 
 	return items, nil
