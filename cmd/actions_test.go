@@ -324,23 +324,23 @@ func TestDeleteAction(t *testing.T) {
 	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
-		name                  string
-		args                  []string
-		buf                   bytes.Buffer
-		isError               bool
-		expectedErrorResponse ErrorResponse
-		expectedResult        DeleteResponse
-		action                Actions
-		svc                   shortener.URLShortener
+		name                   string
+		args                   []string
+		buf                    bytes.Buffer
+		isError                bool
+		expectedErrorResponse  ErrorResponse
+		expectedDeleteResponse DeleteResponse
+		action                 Actions
+		svc                    shortener.URLShortener
 	}{
 		{
-			name:                  "success",
-			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
-			buf:                   bytes.Buffer{},
-			expectedResult:        DeleteResponse{Deleted: true, ShortCode: shortCode},
-			isError:               false,
-			expectedErrorResponse: ErrorResponse{},
+			name:                   "success",
+			args:                   []string{shortCode},
+			action:                 NewActions(listMaxLimit),
+			buf:                    bytes.Buffer{},
+			expectedDeleteResponse: DeleteResponse{Deleted: true, ShortCode: shortCode},
+			isError:                false,
+			expectedErrorResponse:  ErrorResponse{},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, shortCode string) (bool, error) {
 					return true, nil
@@ -431,19 +431,18 @@ func TestDeleteAction(t *testing.T) {
 			err := tc.action.DeleteAction(ctx, &tc.buf, tc.svc, tc.args)
 
 			if tc.isError {
-				var actualError ErrorResponse
-				jsonutil.ReadJSON(&tc.buf, &actualError)
-				assert.Equal(t, tc.expectedErrorResponse, actualError)
-
+				var actualErrorResponse ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualErrorResponse)
+				assert.Equal(t, tc.expectedErrorResponse, actualErrorResponse)
 				return
 			}
 
 			assert.NoError(t, err)
 
-			var actualResult DeleteResponse
-			jsonutil.ReadJSON(&tc.buf, &actualResult)
+			var actualDeleteResponse DeleteResponse
+			jsonutil.ReadJSON(&tc.buf, &actualDeleteResponse)
 
-			assert.Equal(t, tc.expectedResult, actualResult)
+			assert.Equal(t, tc.expectedDeleteResponse, actualDeleteResponse)
 		})
 	}
 }
