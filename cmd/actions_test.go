@@ -16,6 +16,7 @@ import (
 )
 
 func TestAddActions(t *testing.T) {
+	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                   string
@@ -30,7 +31,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                   "success",
 			args:                   []string{"https://example.com"},
-			action:                 NewActions(20),
+			action:                 NewActions(listMaxLimit),
 			buf:                    bytes.Buffer{},
 			expectedResultResponse: ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
 			isError:                false,
@@ -44,7 +45,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "zero args",
 			args:                  []string{},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
@@ -53,7 +54,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "invalid url",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "Invalid URL"},
@@ -66,7 +67,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "error empty args",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "Failed to produce short code"},
@@ -79,7 +80,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "could not add url",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "Failed to add URL, please try again"},
@@ -92,7 +93,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "error not supported",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "Failed to add URL"},
