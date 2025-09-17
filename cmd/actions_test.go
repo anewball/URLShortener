@@ -18,6 +18,7 @@ import (
 )
 
 func TestAddActions(t *testing.T) {
+	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                  string
 		args                  []string
@@ -33,12 +34,12 @@ func TestAddActions(t *testing.T) {
 			args:                  []string{"https://example.com"},
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
-			expectedResult:        ResultResponse{ShortCode: "Hpa3t2B", RawURL: "https://example.com"},
+			expectedResult:        ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
 			isError:               false,
 			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
-					return "Hpa3t2B", nil
+					return shortCode, nil
 				},
 			},
 		},
