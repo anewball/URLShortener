@@ -165,7 +165,7 @@ func TestGet(t *testing.T) {
 		{
 			name:        "empty short code",
 			shortCode:   "",
-			expectedErr: ErrEmptyCode,
+			expectedErr: ErrEmptyShortCode,
 			gen:         &mockNanoID{},
 			querier: &mockQuerier{
 				QueryRowFunc: func(ctx context.Context, sql string, args ...any) dbiface.Row {
@@ -344,7 +344,7 @@ func TestDelete(t *testing.T) {
 			name:            "short code empty",
 			shortCode:       "",
 			expectedDeleted: false,
-			expectedErr:     ErrEmptyCode,
+			expectedErr:     ErrEmptyShortCode,
 			gen:             &mockNanoID{},
 			querier: &mockQuerier{
 				ExecFunc: func(ctx context.Context, sql string, arguments ...any) (dbiface.CommandResult, error) {

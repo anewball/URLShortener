@@ -92,7 +92,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	url, err := svc.Get(ctx, arg)
 	if err != nil {
 		switch {
-		case errors.Is(err, shortener.ErrEmptyCode):
+		case errors.Is(err, shortener.ErrEmptyShortCode):
 			return jsonutil.WriteJSON(out, ErrorResponse{Error: "A short code is required"})
 		case errors.Is(err, shortener.ErrNotFound):
 			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", arg)})
