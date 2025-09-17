@@ -163,7 +163,16 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 
 	deleted, err := svc.Delete(ctx, shortCode)
 	if err != nil {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrDelete, err).Error()})
+		switch {
+		case errors.Is(err, shortener.ErrEmptyShortCode):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: "A short code is required"})
+		case errors.Is(err, shortener.ErrExec):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("A problem occurs when deleting short code: %s", shortCode)})
+		case errors.Is(err, shortener.ErrNotFound):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Could not delete URL with short code %s", shortCode)})
+		default:
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Service could not delete URL with short code %s", shortCode)})
+		}
 	}
 	if !deleted {
 		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %q", ErrNotFound, shortCode).Error()})
