@@ -321,6 +321,7 @@ func TestNewGet(t *testing.T) {
 }
 
 func TestDeleteAction(t *testing.T) {
+	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                  string
@@ -335,7 +336,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "success",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			expectedResult:        DeleteResponse{Deleted: true, ShortCode: shortCode},
 			isError:               false,
@@ -349,7 +350,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "zero args",
 			args:                  []string{},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
@@ -358,7 +359,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "error empty short code",
 			args:                  []string{""},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: "A short code is required"},
@@ -371,7 +372,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "error with exec",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("A problem occurs when deleting short code: %s", shortCode)},
@@ -384,7 +385,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "error URL not found",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not delete URL with short code %s", shortCode)},
@@ -397,7 +398,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "unknown error",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Service could not delete URL with short code %s", shortCode)},
@@ -410,7 +411,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "when deleted variable is false",
 			args:                  []string{shortCode},
-			action:                NewActions(20),
+			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Problem deleting URL with short code %q", shortCode)},
