@@ -327,24 +327,25 @@ func TestNewGet(t *testing.T) {
 }
 
 func TestDeleteAction(t *testing.T) {
+	shortCode := "Hpa3t2B"
 	testCases := []struct {
-		name           string
-		args           []string
-		buf            bytes.Buffer
-		isError        bool
-		expectedError  error
-		expectedResult DeleteResponse
-		action         Actions
-		svc            shortener.URLShortener
+		name                  string
+		args                  []string
+		buf                   bytes.Buffer
+		isError               bool
+		expectedErrorResponse ErrorResponse
+		expectedResult        DeleteResponse
+		action                Actions
+		svc                   shortener.URLShortener
 	}{
 		{
-			name:           "success",
-			args:           []string{"Hpa3t2B"},
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: DeleteResponse{Deleted: true, ShortCode: "Hpa3t2B"},
-			isError:        false,
-			expectedError:  nil,
+			name:                  "success",
+			args:                  []string{shortCode},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			expectedResult:        DeleteResponse{Deleted: true, ShortCode: shortCode},
+			isError:               false,
+			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, shortCode string) (bool, error) {
 					return true, nil
@@ -352,38 +353,73 @@ func TestDeleteAction(t *testing.T) {
 			},
 		},
 		{
-			name:          "error produced",
-			args:          []string{"Hpa3t2B"},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrDelete,
+			name:                  "zero args",
+			args:                  []string{},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
+			svc:                   &mockedShortener{},
+		},
+		{
+			name:                  "error empty short code",
+			args:                  []string{""},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: "A short code is required"},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
-					return false, errors.New("something went wrong")
+					return false, shortener.ErrEmptyShortCode
 				},
 			},
 		},
 		{
-			name:          "error empty args",
-			args:          []string{},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrLenZero,
+			name:                  "error with exec",
+			args:                  []string{shortCode},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("A problem occurs when deleting short code: %s", shortCode)},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
-					return false, errors.New("requires at least 1 arg(s), only received 0")
+					return false, shortener.ErrExec
 				},
 			},
 		},
 		{
-			name:          "when row does not exists",
-			args:          []string{"Hpa3t2B"},
-			action:        NewActions(20),
-			buf:           bytes.Buffer{},
-			isError:       true,
-			expectedError: ErrNotFound,
+			name:                  "error URL not found",
+			args:                  []string{shortCode},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not delete URL with short code %s", shortCode)},
+			svc: &mockedShortener{
+				deleteFunc: func(ctx context.Context, url string) (bool, error) {
+					return false, shortener.ErrNotFound
+				},
+			},
+		},
+		{
+			name:                  "unknown error",
+			args:                  []string{shortCode},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Service could not delete URL with short code %s", shortCode)},
+			svc: &mockedShortener{
+				deleteFunc: func(ctx context.Context, url string) (bool, error) {
+					return false, errors.New("unknown error")
+				},
+			},
+		},
+		{
+			name:                  "when deleted variable is false",
+			args:                  []string{shortCode},
+			action:                NewActions(20),
+			buf:                   bytes.Buffer{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Problem deleting URL with short code %q", shortCode)},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, nil
@@ -400,21 +436,19 @@ func TestDeleteAction(t *testing.T) {
 			err := tc.action.DeleteAction(ctx, &tc.buf, tc.svc, tc.args)
 
 			if tc.isError {
-				assert.Error(t, err)
+				var actualError ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualError)
+				assert.Equal(t, tc.expectedErrorResponse, actualError)
+
 				return
 			}
 
 			assert.NoError(t, err)
-			got := tc.buf.String()
-			assert.NotEmpty(t, got)
 
 			var actualResult DeleteResponse
-			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
-			assert.NoError(t, err)
+			jsonutil.ReadJSON(&tc.buf, &actualResult)
 
 			assert.Equal(t, tc.expectedResult, actualResult)
-
-			assert.True(t, strings.HasSuffix(got, "\n"))
 		})
 	}
 }
