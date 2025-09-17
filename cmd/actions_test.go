@@ -3,11 +3,9 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"testing"
 	"time"
 
@@ -486,31 +484,32 @@ func TestNewDelete(t *testing.T) {
 }
 
 func TestListAction(t *testing.T) {
+	listMaxLimit := 20
 	testCases := []struct {
-		name           string
-		offset         int
-		limit          int
-		buf            bytes.Buffer
-		isError        bool
-		expectedError  error
-		expectedResult ListResponse
-		action         Actions
-		svc            shortener.URLShortener
+		name                  string
+		offset                int
+		limit                 int
+		buf                   bytes.Buffer
+		isError               bool
+		expectedErrorResponse ErrorResponse
+		expectedResponse      ListResponse
+		action                Actions
+		svc                   shortener.URLShortener
 	}{
 		{
 			name:   "success",
 			offset: 0,
 			limit:  2,
-			action: NewActions(20),
+			action: NewActions(listMaxLimit),
 			buf:    bytes.Buffer{},
-			expectedResult: ListResponse{
+			expectedResponse: ListResponse{
 				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
 					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
 				}, Count: 2, Limit: 2, Offset: 0,
 			},
-			isError:       false,
-			expectedError: nil,
+			isError:               false,
+			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
 					return []shortener.URLItem{
@@ -526,14 +525,14 @@ func TestListAction(t *testing.T) {
 			limit:  2,
 			action: NewActions(0),
 			buf:    bytes.Buffer{},
-			expectedResult: ListResponse{
+			expectedResponse: ListResponse{
 				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
 					{RawURL: "https://jayden.newball.com", ShortCode: "k5aBWD5"},
 				}, Count: 2, Limit: 2, Offset: 0,
 			},
-			isError:       false,
-			expectedError: nil,
+			isError:               false,
+			expectedErrorResponse: ErrorResponse{},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
 					return []shortener.URLItem{
@@ -544,52 +543,86 @@ func TestListAction(t *testing.T) {
 			},
 		},
 		{
-			name:           "limit less than zero",
-			offset:         0,
-			limit:          -2,
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: ListResponse{},
-			isError:        true,
-			expectedError:  ErrLimit,
-			svc:            &mockedShortener{},
+			name:                  "limit less than zero",
+			offset:                0,
+			limit:                 -2,
+			action:                NewActions(listMaxLimit),
+			buf:                   bytes.Buffer{},
+			expectedResponse:      ListResponse{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("%s: %d", ErrLimit.Error(), listMaxLimit)},
+			svc:                   &mockedShortener{},
 		},
 		{
-			name:           "offset less than zero",
-			offset:         -2,
-			limit:          2,
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: ListResponse{},
-			isError:        true,
-			expectedError:  ErrNegativeOffset,
-			svc:            &mockedShortener{},
+			name:                  "offset less than zero",
+			offset:                -2,
+			limit:                 2,
+			action:                NewActions(listMaxLimit),
+			buf:                   bytes.Buffer{},
+			expectedResponse:      ListResponse{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %d", ErrNegativeOffset, -2).Error()},
+			svc:                   &mockedShortener{},
 		},
 		{
-			name:           "list returned error",
-			offset:         0,
-			limit:          2,
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: ListResponse{},
-			isError:        true,
-			expectedError:  ErrList,
+			name:                  "error query",
+			offset:                0,
+			limit:                 2,
+			action:                NewActions(listMaxLimit),
+			buf:                   bytes.Buffer{},
+			expectedResponse:      ListResponse{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Failed to retrieve URLs with limit: %d and offset: %d", 2, 0)},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
-					return []shortener.URLItem{}, errors.New("could not retrieve data")
+					return []shortener.URLItem{}, shortener.ErrQuery
 				},
 			},
 		},
 		{
-			name:           "when limit exceeds max",
-			offset:         -2,
-			limit:          21,
-			action:         NewActions(20),
-			buf:            bytes.Buffer{},
-			expectedResult: ListResponse{},
-			isError:        true,
-			expectedError:  ErrLimit,
-			svc:            &mockedShortener{},
+			name:                  "error scan",
+			offset:                0,
+			limit:                 2,
+			action:                NewActions(listMaxLimit),
+			buf:                   bytes.Buffer{},
+			expectedResponse:      ListResponse{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Failed to smarshal URLs with limit: %d and offset: %d", 2, 0)},
+			svc: &mockedShortener{
+				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
+					return []shortener.URLItem{}, shortener.ErrScan
+				},
+			},
+		},
+		{
+			name:                  "error rows",
+			offset:                0,
+			limit:                 2,
+			action:                NewActions(listMaxLimit),
+			buf:                   bytes.Buffer{},
+			expectedResponse:      ListResponse{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("An error occurs when smarshal URLs with limit: %d and offset: %d", 2, 0)},
+			svc: &mockedShortener{
+				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
+					return []shortener.URLItem{}, shortener.ErrRows
+				},
+			},
+		},
+		{
+			name:                  "error rows",
+			offset:                0,
+			limit:                 2,
+			action:                NewActions(listMaxLimit),
+			buf:                   bytes.Buffer{},
+			expectedResponse:      ListResponse{},
+			isError:               true,
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("An error occurs when retrieving URLs from limit: %d and offset: %d", 2, 0)},
+			svc: &mockedShortener{
+				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
+					return []shortener.URLItem{}, errors.New("something went wrong")
+				},
+			},
 		},
 	}
 
@@ -601,21 +634,18 @@ func TestListAction(t *testing.T) {
 			err := tc.action.ListAction(ctx, tc.limit, tc.offset, &tc.buf, tc.svc)
 
 			if tc.isError {
-				require.ErrorIs(t, err, tc.expectedError)
+				var actualError ErrorResponse
+				jsonutil.ReadJSON(&tc.buf, &actualError)
+				assert.Equal(t, tc.expectedErrorResponse, actualError)
 				return
 			}
 
 			assert.NoError(t, err)
-			got := tc.buf.String()
-			assert.NotEmpty(t, got)
 
-			var actualResult ListResponse
-			err = json.NewDecoder(&tc.buf).Decode(&actualResult)
-			assert.NoError(t, err)
+			var actualResponse ListResponse
+			jsonutil.ReadJSON(&tc.buf, &actualResponse)
 
-			assert.Equal(t, tc.expectedResult, actualResult)
-
-			assert.True(t, strings.HasSuffix(got, "\n"))
+			assert.Equal(t, tc.expectedResponse, actualResponse)
 		})
 	}
 }
