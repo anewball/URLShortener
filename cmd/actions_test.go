@@ -121,10 +121,10 @@ func TestAddActions(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			var actualResult ResultResponse
-			jsonutil.ReadJSON(&tc.buf, &actualResult)
+			var actualResultResponse ResultResponse
+			jsonutil.ReadJSON(&tc.buf, &actualResultResponse)
 
-			assert.Equal(t, tc.expectedResultResponse, actualResult)
+			assert.Equal(t, tc.expectedResultResponse, actualResultResponse)
 		})
 	}
 }
