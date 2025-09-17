@@ -17,7 +17,7 @@ var (
 	ErrGet            = errors.New("failed to retrieve original URL")
 	ErrDelete         = errors.New("failed to delete URL")
 	ErrNotFound       = errors.New("no URL found for code")
-	ErrLimit          = errors.New("invalid limit")
+	ErrLimit          = errors.New("the limit has to be at least 1 and cannot exceeds")
 	ErrNegativeOffset = errors.New("offset cannot be negative")
 	ErrList           = errors.New("failed to list URLs")
 )
@@ -125,7 +125,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		max = defaultMax
 	}
 	if limit <= 0 || limit > max {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %d", ErrLimit, limit).Error()})
+		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("%s: %d", ErrLimit.Error(), max)})
 	}
 
 	if offset < 0 {
@@ -134,7 +134,16 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 
 	urlItems, err := svc.List(ctx, limit, offset)
 	if err != nil {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %v", ErrList, err).Error()})
+		switch {
+		case errors.Is(err, shortener.ErrQuery):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Failed to retrieve URLs with limit: %d and offset: %d", limit, offset)})
+		case errors.Is(err, shortener.ErrScan):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Failed to smarshal URLs with limit: %d and offset: %d", limit, offset)})
+		case errors.Is(err, shortener.ErrRows):
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs when smarshal URLs with limit: %d and offset: %d", limit, offset)})
+		default:
+			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs on limit: %d and offset: %d", limit, offset)})
+		}
 	}
 
 	var results []ResultResponse = make([]ResultResponse, 0, len(urlItems))
