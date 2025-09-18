@@ -15,6 +15,10 @@ var (
 	ErrLenZero        = errors.New("requires at least 1 arg(s), only received 0")
 	ErrLimit          = errors.New("the limit has to be at least 1 and cannot exceeds")
 	ErrNegativeOffset = errors.New("offset cannot be negative")
+	ErrURL            = errors.New("invalid URL format")
+	ErrGenCode        = errors.New("could not create a short link at this time. Please try again later")
+	ErrAdd            = errors.New("could not create a short link. Please try again")
+	ErrUnsupported    = errors.New("error not supported")
 )
 
 type ResultResponse struct {
@@ -52,7 +56,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	defer cancel()
 
 	if len(args) == 0 {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: ErrLenZero.Error()})
+		return writeAndReturnError(out, ErrLenZero, nil)
 	}
 
 	arg := args[0]
@@ -60,13 +64,13 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrIsValidURL):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Invalid URL"})
+			return writeAndReturnError(out, ErrURL, err)
 		case errors.Is(err, shortener.ErrGenerate):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to produce short code"})
+			return writeAndReturnError(out, ErrGenCode, err)
 		case errors.Is(err, shortener.ErrQueryRow):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to add URL, please try again"})
+			return writeAndReturnError(out, ErrAdd, err)
 		default:
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to add URL"})
+			return writeAndReturnError(out, ErrUnsupported, err)
 		}
 	}
 
@@ -188,4 +192,20 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	response.ShortCode = shortCode
 
 	return jsonutil.WriteJSON(out, response)
+}
+
+func writeAndReturnError(out io.Writer, code error, cause error) error {
+	_ = jsonutil.WriteJSON(out, ErrorResponse{
+		Error: code.Error(),
+		Details: func() string {
+			if cause != nil {
+				return cause.Error()
+			}
+			return ""
+		}(),
+	})
+	if cause != nil {
+		return fmt.Errorf("%w: %v", code, cause)
+	}
+	return code
 }
