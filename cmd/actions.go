@@ -19,6 +19,10 @@ var (
 	ErrGenCode        = errors.New("could not create a short link at this time. Please try again later")
 	ErrAdd            = errors.New("could not create a short link. Please try again")
 	ErrUnsupported    = errors.New("error not supported")
+	ErrShorCode       = errors.New("shortCode is required. Usage: get <shortCode>")
+	ErrNotFound       = errors.New("no short link found for code")
+	ErrTimeout        = errors.New("request timed out while retrieving the short link. Please try again later")
+	ErrUnexpected     = errors.New("unexpected error. Please try again later")
 )
 
 type ResultResponse struct {
@@ -84,7 +88,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	defer cancel()
 
 	if len(args) == 0 {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: ErrLenZero.Error()})
+		return writeAndReturnError(out, ErrLenZero, nil)
 	}
 
 	arg := args[0]
@@ -92,13 +96,13 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrEmptyShortCode):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "A short code is required"})
+			return writeAndReturnError(out, ErrShorCode, err)
 		case errors.Is(err, shortener.ErrNotFound):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", arg)})
+			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrNotFound, arg), err)
 		case errors.Is(err, shortener.ErrQuery):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Failed to retrieve URL because of timeout"})
+			return writeAndReturnError(out, ErrTimeout, err)
 		default:
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "Something went wrong"})
+			return writeAndReturnError(out, ErrUnexpected, err)
 		}
 	}
 
