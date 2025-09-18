@@ -12,9 +12,10 @@ import (
 )
 
 var (
+	ErrInvalidArgs       = errors.New("invalid arguments")
 	ErrLenZero           = errors.New("requires at least 1 arg(s), only received 0")
-	ErrLimit             = errors.New("limit must be between 1 and")
-	ErrOffset            = errors.New("offset must be >= 0; got")
+	ErrLimit             = errors.New("invalid limit")
+	ErrOffset            = errors.New("invalid offset")
 	ErrURLFormat         = errors.New("invalid URL format")
 	ErrGenCode           = errors.New("could not create a short link at this time. Please try again later")
 	ErrAdd               = errors.New("could not create a short link. Please try again")
@@ -29,7 +30,7 @@ var (
 	ErrUnknownList       = errors.New("failed to retrieve URLs")
 	ErrDelete            = errors.New("unable to delete shortCode")
 	ErrDeleteUnsupported = errors.New("service could not delete URL with short code")
-	ErrUnableToDelete = errors.New("unable to delete short code")
+	ErrUnableToDelete    = errors.New("unable to delete short code")
 )
 
 type ResultResponse struct {
@@ -135,24 +136,30 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		max = defaultMax
 	}
 	if limit <= 0 || limit > max {
-		return writeAndReturnError(out, fmt.Errorf("%s: %d", ErrLimit.Error(), max), nil)
+		return writeAndReturnError(out, ErrLimit,
+			fmt.Errorf("limit must be between 1 and %d; got %d", max, limit))
 	}
 
 	if offset < 0 {
-		return writeAndReturnError(out, fmt.Errorf("%s: %d", ErrOffset.Error(), offset), nil)
+		return writeAndReturnError(out, ErrOffset,
+			fmt.Errorf("offset must be >= 0; got %d", offset))
 	}
 
 	urlItems, err := svc.List(ctx, limit, offset)
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrQuery):
-			return writeAndReturnError(out, fmt.Errorf("%s (limit=%d, offset=%d)", ErrQuery, limit, offset), err)
+			return writeAndReturnError(out, ErrUnexpected,
+				fmt.Errorf("error executing list query (limit=%d, offset=%d)", limit, offset))
 		case errors.Is(err, shortener.ErrScan):
-			return writeAndReturnError(out, ErrScan, err)
+			return writeAndReturnError(out, ErrUnexpected,
+				fmt.Errorf("error scanning rows (limit=%d, offset=%d)", limit, offset))
 		case errors.Is(err, shortener.ErrRows):
-			return writeAndReturnError(out, fmt.Errorf("%s (limit=%d, offset=%d)", ErrRows, limit, offset), err)
+			return writeAndReturnError(out, ErrUnexpected,
+				fmt.Errorf("row iteration error (limit=%d, offset=%d)", limit, offset))
 		default:
-			return writeAndReturnError(out, fmt.Errorf("%s (limit=%d, offset=%d)", ErrRows, limit, offset), err)
+			return writeAndReturnError(out, ErrUnexpected,
+				fmt.Errorf("unknown list error (limit=%d, offset=%d)", limit, offset))
 		}
 	}
 
