@@ -57,7 +57,7 @@ func TestAddActions(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrURL.Error(), Details: shortener.ErrIsValidURL.Error()},
+			expectedErrorResponse: ErrorResponse{Error: ErrURLFormat.Error(), Details: shortener.ErrIsValidURL.Error()},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrIsValidURL
@@ -562,7 +562,7 @@ func TestListAction(t *testing.T) {
 			buf:                   bytes.Buffer{},
 			expectedListResponse:  ListResponse{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %d", ErrNegativeOffset, -2).Error()},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %d", ErrOffset, -2).Error()},
 			svc:                   &mockedShortener{},
 		},
 		{
@@ -573,7 +573,7 @@ func TestListAction(t *testing.T) {
 			buf:                   bytes.Buffer{},
 			expectedListResponse:  ListResponse{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Failed to retrieve URLs with limit: %d and offset: %d", 2, 0)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%s (limit=%d, offset=%d)", ErrQuery, 2, 0).Error(), Details: shortener.ErrQuery.Error()},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
 					return []shortener.URLItem{}, shortener.ErrQuery
@@ -588,7 +588,7 @@ func TestListAction(t *testing.T) {
 			buf:                   bytes.Buffer{},
 			expectedListResponse:  ListResponse{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Failed to smarshal URLs with limit: %d and offset: %d", 2, 0)},
+			expectedErrorResponse: ErrorResponse{Error: ErrScan.Error(), Details: shortener.ErrScan.Error()},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
 					return []shortener.URLItem{}, shortener.ErrScan
@@ -603,7 +603,7 @@ func TestListAction(t *testing.T) {
 			buf:                   bytes.Buffer{},
 			expectedListResponse:  ListResponse{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("An error occurs when smarshal URLs with limit: %d and offset: %d", 2, 0)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%s (limit=%d, offset=%d)", ErrRows, 2, 0).Error(), Details: shortener.ErrRows.Error()},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
 					return []shortener.URLItem{}, shortener.ErrRows
@@ -611,14 +611,14 @@ func TestListAction(t *testing.T) {
 			},
 		},
 		{
-			name:                  "error rows",
+			name:                  "unknown error",
 			offset:                0,
 			limit:                 2,
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			expectedListResponse:  ListResponse{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("An error occurs when retrieving URLs from limit: %d and offset: %d", 2, 0)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%s (limit=%d, offset=%d)", ErrRows, 2, 0).Error(), Details: "something went wrong"},
 			svc: &mockedShortener{
 				listFunc: func(ctx context.Context, limit int, offset int) ([]shortener.URLItem, error) {
 					return []shortener.URLItem{}, errors.New("something went wrong")
