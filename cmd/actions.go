@@ -11,6 +11,10 @@ import (
 	"github.com/anewball/urlshortener/internal/shortener"
 )
 
+const (
+	defaultListMax = 500
+)
+
 var (
 	ErrInvalidArgs       = errors.New("invalid arguments")
 	ErrLenZero           = errors.New("requires at least 1 arg(s), only received 0")
@@ -130,10 +134,9 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	const defaultMax = 500
 	max := a.listMaxLimit
 	if max <= 0 {
-		max = defaultMax
+		max = defaultListMax
 	}
 	if limit <= 0 || limit > max {
 		return writeAndReturnError(out, ErrLimit,
