@@ -12,21 +12,24 @@ import (
 )
 
 var (
-	ErrLenZero     = errors.New("requires at least 1 arg(s), only received 0")
-	ErrLimit       = errors.New("limit must be between 1 and")
-	ErrOffset      = errors.New("offset must be >= 0; got")
-	ErrURLFormat   = errors.New("invalid URL format")
-	ErrGenCode     = errors.New("could not create a short link at this time. Please try again later")
-	ErrAdd         = errors.New("could not create a short link. Please try again")
-	ErrUnsupported = errors.New("error not supported")
-	ErrShorCode    = errors.New("shortCode is required. Usage: get <shortCode>")
-	ErrNotFound    = errors.New("no short link found for code")
-	ErrTimeout     = errors.New("request timed out while retrieving the short link. Please try again later")
-	ErrUnexpected  = errors.New("unexpected error. Please try again later")
-	ErrQuery       = errors.New("an error occurred while retrieving URLs")
-	ErrScan        = errors.New("unable to retrieve URLs. Please try again later")
-	ErrRows        = errors.New("failed to marshal URLs")
-	ErrUnknownList = errors.New("failed to retrieve URLs")
+	ErrLenZero           = errors.New("requires at least 1 arg(s), only received 0")
+	ErrLimit             = errors.New("limit must be between 1 and")
+	ErrOffset            = errors.New("offset must be >= 0; got")
+	ErrURLFormat         = errors.New("invalid URL format")
+	ErrGenCode           = errors.New("could not create a short link at this time. Please try again later")
+	ErrAdd               = errors.New("could not create a short link. Please try again")
+	ErrUnsupported       = errors.New("error not supported")
+	ErrShorCode          = errors.New("shortCode is required. Usage: get <shortCode>")
+	ErrNotFound          = errors.New("no short link found for code")
+	ErrTimeout           = errors.New("request timed out while retrieving the short link. Please try again later")
+	ErrUnexpected        = errors.New("unexpected error. Please try again later")
+	ErrQuery             = errors.New("an error occurred while retrieving URLs")
+	ErrScan              = errors.New("unable to retrieve URLs. Please try again later")
+	ErrRows              = errors.New("failed to marshal URLs")
+	ErrUnknownList       = errors.New("failed to retrieve URLs")
+	ErrDelete            = errors.New("unable to delete shortCode")
+	ErrDeleteUnsupported = errors.New("service could not delete URL with short code")
+	ErrUnableToDelete = errors.New("unable to delete short code")
 )
 
 type ResultResponse struct {
@@ -173,7 +176,7 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	defer cancel()
 
 	if len(args) == 0 {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: ErrLenZero.Error()})
+		return writeAndReturnError(out, ErrLenZero, nil)
 	}
 	shortCode := args[0]
 
@@ -181,17 +184,17 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrEmptyShortCode):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: "A short code is required"})
+			return writeAndReturnError(out, ErrShorCode, err)
 		case errors.Is(err, shortener.ErrExec):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("A problem occurs when deleting short code: %s", shortCode)})
+			return writeAndReturnError(out, fmt.Errorf("%s %s", ErrDelete.Error(), shortCode), err)
 		case errors.Is(err, shortener.ErrNotFound):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Could not delete URL with short code %s", shortCode)})
+			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrNotFound, shortCode), err)
 		default:
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Service could not delete URL with short code %s", shortCode)})
+			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrDeleteUnsupported, shortCode), err)
 		}
 	}
 	if !deleted {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Problem deleting URL with short code %q", shortCode)})
+		return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrUnableToDelete, shortCode), nil)
 	}
 
 	var response DeleteResponse
