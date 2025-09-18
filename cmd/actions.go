@@ -20,7 +20,7 @@ var (
 	ErrGenCode           = errors.New("could not create a short link at this time. Please try again later")
 	ErrAdd               = errors.New("could not create a short link. Please try again")
 	ErrUnsupported       = errors.New("error not supported")
-	ErrShorCode          = errors.New("shortCode is required. Usage: get <shortCode>")
+	ErrShortCodeRequired = errors.New("missing required argument: short code")
 	ErrNotFound          = errors.New("no short link found for code")
 	ErrTimeout           = errors.New("request timed out while retrieving the short link. Please try again later")
 	ErrUnexpected        = errors.New("unexpected error. Please try again later")
@@ -104,7 +104,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrEmptyShortCode):
-			return writeAndReturnError(out, ErrShorCode, err)
+			return writeAndReturnError(out, ErrShortCodeRequired, err)
 		case errors.Is(err, shortener.ErrNotFound):
 			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrNotFound, arg), err)
 		case errors.Is(err, shortener.ErrQuery):
@@ -191,7 +191,7 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrEmptyShortCode):
-			return writeAndReturnError(out, ErrShorCode, err)
+			return writeAndReturnError(out, ErrShortCodeRequired, err)
 		case errors.Is(err, shortener.ErrExec):
 			return writeAndReturnError(out, fmt.Errorf("%s %s", ErrDelete.Error(), shortCode), err)
 		case errors.Is(err, shortener.ErrNotFound):
