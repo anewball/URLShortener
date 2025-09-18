@@ -197,7 +197,8 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 		case errors.Is(err, shortener.ErrNotFound):
 			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrNotFound, shortCode), err)
 		default:
-			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrDeleteUnsupported, shortCode), err)
+			return writeAndReturnError(out, ErrUnexpected,
+				fmt.Errorf("failed to delete short code: %q", shortCode))
 		}
 	}
 	if !deleted {
