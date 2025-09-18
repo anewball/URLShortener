@@ -233,12 +233,15 @@ func TestGetAction(t *testing.T) {
 			},
 		},
 		{
-			name:                  "error query",
-			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
-			buf:                   bytes.Buffer{},
-			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrTimeout.Error(), Details: shortener.ErrQuery.Error()},
+			name:    "error query",
+			args:    []string{shortCode},
+			action:  NewActions(listMaxLimit),
+			buf:     bytes.Buffer{},
+			isError: true,
+			expectedErrorResponse: ErrorResponse{
+				Error:   ErrUnexpected.Error(),
+				Details: errors.New("an error occurred while retrieving the short link. Please try again later").Error(),
+			},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrQuery

@@ -112,7 +112,8 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 		case errors.Is(err, shortener.ErrNotFound):
 			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrNotFound, arg), err)
 		case errors.Is(err, shortener.ErrQuery):
-			return writeAndReturnError(out, ErrTimeout, err)
+			return writeAndReturnError(out, ErrUnexpected,
+				errors.New("an error occurred while retrieving the short link. Please try again later"))
 		default:
 			return writeAndReturnError(out, ErrUnexpected, err)
 		}
