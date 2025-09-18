@@ -22,7 +22,6 @@ var (
 	ErrLimit             = errors.New("invalid limit")
 	ErrOffset            = errors.New("invalid offset")
 	ErrURLFormat         = errors.New("invalid URL format")
-	ErrGenCode           = errors.New("could not create a short link at this time. Please try again later")
 	ErrAdd               = errors.New("could not create a short link. Please try again")
 	ErrUnsupported       = errors.New("error not supported")
 	ErrShortCodeRequired = errors.New("missing required argument: short code")
@@ -83,7 +82,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 		case errors.Is(err, shortener.ErrIsValidURL):
 			return writeAndReturnError(out, ErrURLFormat, err)
 		case errors.Is(err, shortener.ErrGenerate):
-			return writeAndReturnError(out, ErrGenCode, err)
+			return writeAndReturnError(out, ErrAdd, errors.New("error generating short code"))
 		case errors.Is(err, shortener.ErrQueryRow):
 			return writeAndReturnError(out, ErrAdd, err)
 		default:

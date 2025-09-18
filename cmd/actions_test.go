@@ -65,12 +65,15 @@ func TestAddActions(t *testing.T) {
 			},
 		},
 		{
-			name:                  "error empty args",
-			args:                  []string{"https://example.com"},
-			action:                NewActions(listMaxLimit),
-			buf:                   bytes.Buffer{},
-			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrGenCode.Error(), Details: shortener.ErrGenerate.Error()},
+			name:    "error empty args",
+			args:    []string{"https://example.com"},
+			action:  NewActions(listMaxLimit),
+			buf:     bytes.Buffer{},
+			isError: true,
+			expectedErrorResponse: ErrorResponse{
+				Error:   ErrAdd.Error(),
+				Details: errors.New("error generating short code").Error(),
+			},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrGenerate
