@@ -401,12 +401,15 @@ func TestDeleteAction(t *testing.T) {
 			},
 		},
 		{
-			name:                  "unknown error",
-			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
-			buf:                   bytes.Buffer{},
-			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %s", ErrDeleteUnsupported, shortCode).Error(), Details: "unknown error"},
+			name:    "unknown error",
+			args:    []string{shortCode},
+			action:  NewActions(listMaxLimit),
+			buf:     bytes.Buffer{},
+			isError: true,
+			expectedErrorResponse: ErrorResponse{
+				Error:   ErrUnexpected.Error(),
+				Details: fmt.Errorf("failed to delete short code: %q", shortCode).Error(),
+			},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, errors.New("unknown error")
