@@ -361,7 +361,7 @@ func TestDeleteAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "A short code is required"},
+			expectedErrorResponse: ErrorResponse{Error: ErrShorCode.Error(), Details: shortener.ErrEmptyShortCode.Error()},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, shortener.ErrEmptyShortCode
@@ -374,7 +374,7 @@ func TestDeleteAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("A problem occurs when deleting short code: %s", shortCode)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%s %s", ErrDelete.Error(), shortCode).Error(), Details: shortener.ErrExec.Error()},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, shortener.ErrExec
@@ -387,7 +387,7 @@ func TestDeleteAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not delete URL with short code %s", shortCode)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %s", ErrNotFound, shortCode).Error(), Details: shortener.ErrNotFound.Error()},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, shortener.ErrNotFound
@@ -400,7 +400,7 @@ func TestDeleteAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Service could not delete URL with short code %s", shortCode)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %s", ErrDeleteUnsupported, shortCode).Error(), Details: "unknown error"},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, errors.New("unknown error")
@@ -413,7 +413,7 @@ func TestDeleteAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Problem deleting URL with short code %q", shortCode)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %s", ErrUnableToDelete, shortCode).Error()},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, nil
