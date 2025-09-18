@@ -12,17 +12,21 @@ import (
 )
 
 var (
-	ErrLenZero        = errors.New("requires at least 1 arg(s), only received 0")
-	ErrLimit          = errors.New("the limit has to be at least 1 and cannot exceeds")
-	ErrNegativeOffset = errors.New("offset cannot be negative")
-	ErrURL            = errors.New("invalid URL format")
-	ErrGenCode        = errors.New("could not create a short link at this time. Please try again later")
-	ErrAdd            = errors.New("could not create a short link. Please try again")
-	ErrUnsupported    = errors.New("error not supported")
-	ErrShorCode       = errors.New("shortCode is required. Usage: get <shortCode>")
-	ErrNotFound       = errors.New("no short link found for code")
-	ErrTimeout        = errors.New("request timed out while retrieving the short link. Please try again later")
-	ErrUnexpected     = errors.New("unexpected error. Please try again later")
+	ErrLenZero     = errors.New("requires at least 1 arg(s), only received 0")
+	ErrLimit       = errors.New("limit must be between 1 and")
+	ErrOffset      = errors.New("offset must be >= 0; got")
+	ErrURLFormat   = errors.New("invalid URL format")
+	ErrGenCode     = errors.New("could not create a short link at this time. Please try again later")
+	ErrAdd         = errors.New("could not create a short link. Please try again")
+	ErrUnsupported = errors.New("error not supported")
+	ErrShorCode    = errors.New("shortCode is required. Usage: get <shortCode>")
+	ErrNotFound    = errors.New("no short link found for code")
+	ErrTimeout     = errors.New("request timed out while retrieving the short link. Please try again later")
+	ErrUnexpected  = errors.New("unexpected error. Please try again later")
+	ErrQuery       = errors.New("an error occurred while retrieving URLs")
+	ErrScan        = errors.New("unable to retrieve URLs. Please try again later")
+	ErrRows        = errors.New("failed to marshal URLs")
+	ErrUnknownList = errors.New("failed to retrieve URLs")
 )
 
 type ResultResponse struct {
@@ -68,7 +72,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrIsValidURL):
-			return writeAndReturnError(out, ErrURL, err)
+			return writeAndReturnError(out, ErrURLFormat, err)
 		case errors.Is(err, shortener.ErrGenerate):
 			return writeAndReturnError(out, ErrGenCode, err)
 		case errors.Is(err, shortener.ErrQueryRow):
@@ -128,24 +132,24 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 		max = defaultMax
 	}
 	if limit <= 0 || limit > max {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("%s: %d", ErrLimit.Error(), max)})
+		return writeAndReturnError(out, fmt.Errorf("%s: %d", ErrLimit.Error(), max), nil)
 	}
 
 	if offset < 0 {
-		return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Errorf("%w: %d", ErrNegativeOffset, offset).Error()})
+		return writeAndReturnError(out, fmt.Errorf("%s: %d", ErrOffset.Error(), offset), nil)
 	}
 
 	urlItems, err := svc.List(ctx, limit, offset)
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrQuery):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Failed to retrieve URLs with limit: %d and offset: %d", limit, offset)})
+			return writeAndReturnError(out, fmt.Errorf("%s (limit=%d, offset=%d)", ErrQuery, limit, offset), err)
 		case errors.Is(err, shortener.ErrScan):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("Failed to smarshal URLs with limit: %d and offset: %d", limit, offset)})
+			return writeAndReturnError(out, ErrScan, err)
 		case errors.Is(err, shortener.ErrRows):
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs when smarshal URLs with limit: %d and offset: %d", limit, offset)})
+			return writeAndReturnError(out, fmt.Errorf("%s (limit=%d, offset=%d)", ErrRows, limit, offset), err)
 		default:
-			return jsonutil.WriteJSON(out, ErrorResponse{Error: fmt.Sprintf("An error occurs when retrieving URLs from limit: %d and offset: %d", limit, offset)})
+			return writeAndReturnError(out, fmt.Errorf("%s (limit=%d, offset=%d)", ErrRows, limit, offset), err)
 		}
 	}
 
