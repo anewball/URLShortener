@@ -209,7 +209,7 @@ func TestGetAction(t *testing.T) {
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "A short code is required"},
+			expectedErrorResponse: ErrorResponse{Error: ErrShorCode.Error(), Details: shortener.ErrEmptyShortCode.Error()},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrEmptyShortCode
@@ -222,7 +222,7 @@ func TestGetAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("Could not find URL with short code %s", shortCode)},
+			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("%s: %s", ErrNotFound, shortCode), Details: shortener.ErrNotFound.Error()},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrNotFound
@@ -235,7 +235,7 @@ func TestGetAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "Failed to retrieve URL because of timeout"},
+			expectedErrorResponse: ErrorResponse{Error: ErrTimeout.Error(), Details: shortener.ErrQuery.Error()},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrQuery
@@ -248,7 +248,7 @@ func TestGetAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "Something went wrong"},
+			expectedErrorResponse: ErrorResponse{Error: ErrUnexpected.Error(), Details: "Something went wrong"},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", errors.New("Something went wrong")
