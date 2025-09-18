@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	defaultListMax = 500
+	defaultListMax       = 500
+	defaultActionTimeout = 5 * time.Second
 )
 
 var (
@@ -68,7 +69,7 @@ func NewActions(listMaxLimit int) Actions {
 }
 
 func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
 	if len(args) == 0 {
@@ -96,7 +97,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 }
 
 func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
 	if len(args) == 0 {
@@ -131,7 +132,7 @@ type ListResponse struct {
 }
 
 func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
 	max := a.listMaxLimit
@@ -182,7 +183,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 }
 
 func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
 	if len(args) == 0 {
