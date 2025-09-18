@@ -57,7 +57,7 @@ func TestAddActions(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "Invalid URL"},
+			expectedErrorResponse: ErrorResponse{Error: ErrURL.Error(), Details: shortener.ErrIsValidURL.Error()},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrIsValidURL
@@ -70,7 +70,7 @@ func TestAddActions(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "Failed to produce short code"},
+			expectedErrorResponse: ErrorResponse{Error: ErrGenCode.Error(), Details: shortener.ErrGenerate.Error()},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrGenerate
@@ -83,7 +83,7 @@ func TestAddActions(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "Failed to add URL, please try again"},
+			expectedErrorResponse: ErrorResponse{Error: ErrAdd.Error(), Details: shortener.ErrQueryRow.Error()},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrQueryRow
@@ -96,7 +96,7 @@ func TestAddActions(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: "Failed to add URL"},
+			expectedErrorResponse: ErrorResponse{Error: ErrUnsupported.Error(), Details: "Failed to add URL"},
 			svc: &mockedShortener{
 				addFunc: func(ctx context.Context, url string) (string, error) {
 					return "", errors.New("Failed to add URL")
