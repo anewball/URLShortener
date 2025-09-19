@@ -362,12 +362,15 @@ func TestDeleteAction(t *testing.T) {
 			svc:                   &mockedShortener{},
 		},
 		{
-			name:                  "error empty short code",
-			args:                  []string{""},
-			action:                NewActions(listMaxLimit),
-			buf:                   bytes.Buffer{},
-			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrShortCode.Error(), Details: shortener.ErrShortCode.Error()},
+			name:    "error empty short code",
+			args:    []string{""},
+			action:  NewActions(listMaxLimit),
+			buf:     bytes.Buffer{},
+			isError: true,
+			expectedErrorResponse: ErrorResponse{
+				Error:   ErrShortCode.Error(),
+				Details: errors.New("a required short code was not provided. Please see usage: delete <shortCode>").Error(),
+			},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, shortener.ErrShortCode
