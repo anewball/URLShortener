@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"github.com/anewball/urlshortener/core"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-func NewDelete(acts Actions, svc shortener.URLShortener) *cobra.Command {
+func NewDelete(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "delete <code>",
 		Short: "Delete a URL from the shortener service by short code",

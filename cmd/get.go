@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"github.com/anewball/urlshortener/core"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-func NewGet(acts Actions, svc shortener.URLShortener) *cobra.Command {
+func NewGet(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
 	return &cobra.Command{
 		Use:   "get <code>",
 		Short: "Retrieve a URL from the shortener service",

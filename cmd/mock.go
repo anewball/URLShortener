@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/anewball/urlshortener/core"
 	"github.com/anewball/urlshortener/internal/shortener"
 )
 
@@ -32,7 +33,7 @@ func (m *mockedShortener) Delete(ctx context.Context, code string) (bool, error)
 	return m.deleteFunc(ctx, code)
 }
 
-var _ Actions = (*mockedActions)(nil)
+var _ core.Actions = (*mockedActions)(nil)
 
 type mockedActions struct {
 	AddActionFunc    func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error

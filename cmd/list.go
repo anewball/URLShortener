@@ -1,11 +1,12 @@
 package cmd
 
 import (
+	"github.com/anewball/urlshortener/core"
 	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-func NewList(acts Actions, svc shortener.URLShortener) *cobra.Command {
+func NewList(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
