@@ -207,12 +207,15 @@ func TestGetAction(t *testing.T) {
 			svc:                   &mockedShortener{},
 		},
 		{
-			name:                  "error empty short code",
-			args:                  []string{""},
-			action:                NewActions(20),
-			buf:                   bytes.Buffer{},
-			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrShortCode.Error(), Details: shortener.ErrShortCode.Error()},
+			name:    "error empty short code",
+			args:    []string{""},
+			action:  NewActions(20),
+			buf:     bytes.Buffer{},
+			isError: true,
+			expectedErrorResponse: ErrorResponse{
+				Error:   ErrShortCode.Error(),
+				Details: errors.New("a required short code was not provided. Please see usage: get <shortCode>").Error(),
+			},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrShortCode
