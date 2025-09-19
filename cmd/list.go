@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"github.com/anewball/urlshortener/core"
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-func NewList(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
+func NewList(acts core.Actions) *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List all URLs in the shortener service by offset and limit",
@@ -17,7 +16,7 @@ func NewList(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
 			limit, _ := cmd.Flags().GetInt("limit")
 			offset, _ := cmd.Flags().GetInt("offset")
 
-			return acts.ListAction(cmd.Context(), limit, offset, cmd.OutOrStdout(), svc)
+			return acts.ListAction(cmd.Context(), limit, offset, cmd.OutOrStdout())
 		},
 	}
 

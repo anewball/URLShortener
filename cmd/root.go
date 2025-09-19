@@ -2,11 +2,10 @@ package cmd
 
 import (
 	"github.com/anewball/urlshortener/core"
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/spf13/cobra"
 )
 
-func NewRoot(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
+func NewRoot(acts core.Actions) *cobra.Command {
 	var cfgFile string
 
 	rootCmd := &cobra.Command{
@@ -21,7 +20,7 @@ func NewRoot(acts core.Actions, svc shortener.URLShortener) *cobra.Command {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.urlshortener.yaml)")
 	rootCmd.PersistentFlags().String("author", "Andy Newball", "author of the URL shortener")
 
-	rootCmd.AddCommand(NewAdd(acts, svc), NewDelete(acts, svc), NewGet(acts, svc), NewList(acts, svc))
+	rootCmd.AddCommand(NewAdd(acts), NewDelete(acts), NewGet(acts), NewList(acts))
 
 	return rootCmd
 }
