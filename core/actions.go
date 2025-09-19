@@ -53,21 +53,22 @@ type ErrorResponse struct {
 }
 
 type Actions interface {
-	AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
-	GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
-	ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error
-	DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error
+	AddAction(ctx context.Context, out io.Writer, args []string) error
+	GetAction(ctx context.Context, out io.Writer, args []string) error
+	ListAction(ctx context.Context, limit int, offset int, out io.Writer) error
+	DeleteAction(ctx context.Context, out io.Writer, args []string) error
 }
 
 type actions struct {
 	listMaxLimit int
+	svc          shortener.URLShortener
 }
 
-func NewActions(listMaxLimit int) Actions {
-	return &actions{listMaxLimit: listMaxLimit}
+func NewActions(svc shortener.URLShortener, listMaxLimit int) Actions {
+	return &actions{svc: svc, listMaxLimit: listMaxLimit}
 }
 
-func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+func (a *actions) AddAction(ctx context.Context, out io.Writer, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
@@ -76,7 +77,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	}
 
 	arg := args[0]
-	shortCode, err := svc.Add(ctx, arg)
+	shortCode, err := a.svc.Add(ctx, arg)
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrIsValidURL):
@@ -95,7 +96,7 @@ func (a *actions) AddAction(ctx context.Context, out io.Writer, svc shortener.UR
 	return jsonutil.WriteJSON(out, response)
 }
 
-func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+func (a *actions) GetAction(ctx context.Context, out io.Writer, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
@@ -104,7 +105,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	}
 
 	arg := args[0]
-	url, err := svc.Get(ctx, arg)
+	url, err := a.svc.Get(ctx, arg)
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrShortCode):
@@ -132,7 +133,7 @@ type ListResponse struct {
 	Offset int              `json:"offset"`
 }
 
-func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
+func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.Writer) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
@@ -150,7 +151,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 			fmt.Errorf("offset must be >= 0; got %d", offset))
 	}
 
-	urlItems, err := svc.List(ctx, limit, offset)
+	urlItems, err := a.svc.List(ctx, limit, offset)
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrQuery):
@@ -183,7 +184,7 @@ func (a *actions) ListAction(ctx context.Context, limit int, offset int, out io.
 	return jsonutil.WriteJSON(out, response)
 }
 
-func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+func (a *actions) DeleteAction(ctx context.Context, out io.Writer, args []string) error {
 	ctx, cancel := context.WithTimeout(ctx, defaultActionTimeout)
 	defer cancel()
 
@@ -192,7 +193,7 @@ func (a *actions) DeleteAction(ctx context.Context, out io.Writer, svc shortener
 	}
 	shortCode := args[0]
 
-	deleted, err := svc.Delete(ctx, shortCode)
+	deleted, err := a.svc.Delete(ctx, shortCode)
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrShortCode):
