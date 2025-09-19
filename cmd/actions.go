@@ -108,7 +108,7 @@ func (a *actions) GetAction(ctx context.Context, out io.Writer, svc shortener.UR
 	if err != nil {
 		switch {
 		case errors.Is(err, shortener.ErrEmptyShortCode):
-			return writeAndReturnError(out, ErrShortCode, err)
+			return writeAndReturnError(out, ErrShortCode, errors.New("a required short code was not provided. Please see usage: get <shortCode>"))
 		case errors.Is(err, shortener.ErrNotFound):
 			return writeAndReturnError(out, fmt.Errorf("%w: %s", ErrNotFound, arg), err)
 		case errors.Is(err, shortener.ErrQuery):
