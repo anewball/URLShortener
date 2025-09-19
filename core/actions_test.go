@@ -14,23 +14,22 @@ import (
 )
 
 func TestAddActions(t *testing.T) {
-	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                   string
 		args                   []string
 		buf                    bytes.Buffer
 		isError                bool
+		listMaxLimit           int
 		expectedErrorResponse  ErrorResponse
 		expectedResultResponse ResultResponse
-		action                 Actions
 		svc                    shortener.URLShortener
 	}{
 		{
 			name:                   "success",
 			args:                   []string{"https://example.com"},
-			action:                 NewActions(listMaxLimit),
 			buf:                    bytes.Buffer{},
+			listMaxLimit:           20,
 			expectedResultResponse: ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
 			isError:                false,
 			expectedErrorResponse:  ErrorResponse{},
@@ -43,7 +42,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "zero args",
 			args:                  []string{},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
@@ -52,7 +51,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "invalid url",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrURLFormat.Error(), Details: shortener.ErrIsValidURL.Error()},
@@ -63,11 +62,11 @@ func TestAddActions(t *testing.T) {
 			},
 		},
 		{
-			name:    "error empty args",
-			args:    []string{"https://example.com"},
-			action:  NewActions(listMaxLimit),
-			buf:     bytes.Buffer{},
-			isError: true,
+			name:         "error empty args",
+			args:         []string{"https://example.com"},
+			listMaxLimit: 20,
+			buf:          bytes.Buffer{},
+			isError:      true,
 			expectedErrorResponse: ErrorResponse{
 				Error:   ErrAdd.Error(),
 				Details: errors.New("error generating short code").Error(),
@@ -81,7 +80,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "could not add url",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrAdd.Error(), Details: shortener.ErrQueryRow.Error()},
@@ -94,7 +93,7 @@ func TestAddActions(t *testing.T) {
 		{
 			name:                  "error not supported",
 			args:                  []string{"https://example.com"},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrUnsupported.Error(), Details: "Failed to add URL"},
@@ -111,7 +110,9 @@ func TestAddActions(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			err := tc.action.AddAction(ctx, &tc.buf, tc.svc, tc.args)
+			action := NewActions(tc.svc, tc.listMaxLimit)
+
+			err := action.AddAction(ctx, &tc.buf, tc.args)
 
 			if tc.isError {
 				var actualErrorResponse ErrorResponse
@@ -131,13 +132,13 @@ func TestAddActions(t *testing.T) {
 }
 
 func TestGetAction(t *testing.T) {
-	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                   string
 		args                   []string
 		buf                    bytes.Buffer
 		isError                bool
+		listMaxLimit           int
 		expectedErrorResponse  ErrorResponse
 		expectedResultResponse ResultResponse
 		action                 Actions
@@ -146,7 +147,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                   "success",
 			args:                   []string{shortCode},
-			action:                 NewActions(listMaxLimit),
+			listMaxLimit:           20,
 			buf:                    bytes.Buffer{},
 			expectedResultResponse: ResultResponse{ShortCode: shortCode, RawURL: "https://example.com"},
 			isError:                false,
@@ -160,18 +161,18 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "zero args",
 			args:                  []string{},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
 			svc:                   &mockedShortener{},
 		},
 		{
-			name:    "error empty short code",
-			args:    []string{""},
-			action:  NewActions(20),
-			buf:     bytes.Buffer{},
-			isError: true,
+			name:         "error empty short code",
+			args:         []string{""},
+			listMaxLimit: 20,
+			buf:          bytes.Buffer{},
+			isError:      true,
 			expectedErrorResponse: ErrorResponse{
 				Error:   ErrShortCode.Error(),
 				Details: errors.New("a required short code was not provided. Please see usage: get <shortCode>").Error(),
@@ -185,7 +186,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "error not found",
 			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Sprintf("%s: %s", ErrNotFound, shortCode), Details: shortener.ErrNotFound.Error()},
@@ -196,11 +197,11 @@ func TestGetAction(t *testing.T) {
 			},
 		},
 		{
-			name:    "error query",
-			args:    []string{shortCode},
-			action:  NewActions(listMaxLimit),
-			buf:     bytes.Buffer{},
-			isError: true,
+			name:         "error query",
+			args:         []string{shortCode},
+			listMaxLimit: 20,
+			buf:          bytes.Buffer{},
+			isError:      true,
 			expectedErrorResponse: ErrorResponse{
 				Error:   ErrUnexpected.Error(),
 				Details: errors.New("an error occurred while retrieving the short link. Please try again later").Error(),
@@ -214,7 +215,7 @@ func TestGetAction(t *testing.T) {
 		{
 			name:                  "error",
 			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrUnexpected.Error(), Details: "Something went wrong"},
@@ -231,7 +232,9 @@ func TestGetAction(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			err := tc.action.GetAction(ctx, &tc.buf, tc.svc, tc.args)
+			action := NewActions(tc.svc, tc.listMaxLimit)
+
+			err := action.GetAction(ctx, &tc.buf, tc.args)
 
 			if tc.isError {
 				var actualErrorResponse ErrorResponse
@@ -251,12 +254,12 @@ func TestGetAction(t *testing.T) {
 }
 
 func TestDeleteAction(t *testing.T) {
-	listMaxLimit := 20
 	shortCode := "Hpa3t2B"
 	testCases := []struct {
 		name                   string
 		args                   []string
 		buf                    bytes.Buffer
+		listMaxLimit           int
 		isError                bool
 		expectedErrorResponse  ErrorResponse
 		expectedDeleteResponse DeleteResponse
@@ -266,7 +269,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                   "success",
 			args:                   []string{shortCode},
-			action:                 NewActions(listMaxLimit),
+			listMaxLimit:           20,
 			buf:                    bytes.Buffer{},
 			expectedDeleteResponse: DeleteResponse{Deleted: true, ShortCode: shortCode},
 			isError:                false,
@@ -280,18 +283,18 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "zero args",
 			args:                  []string{},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: ErrLenZero.Error()},
 			svc:                   &mockedShortener{},
 		},
 		{
-			name:    "error empty short code",
-			args:    []string{""},
-			action:  NewActions(listMaxLimit),
-			buf:     bytes.Buffer{},
-			isError: true,
+			name:         "error empty short code",
+			args:         []string{""},
+			listMaxLimit: 20,
+			buf:          bytes.Buffer{},
+			isError:      true,
 			expectedErrorResponse: ErrorResponse{
 				Error:   ErrShortCode.Error(),
 				Details: errors.New("a required short code was not provided. Please see usage: delete <shortCode>").Error(),
@@ -305,7 +308,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "error with exec",
 			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%s %s", ErrDelete.Error(), shortCode).Error(), Details: shortener.ErrExec.Error()},
@@ -318,7 +321,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "error URL not found",
 			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %s", ErrNotFound, shortCode).Error(), Details: shortener.ErrNotFound.Error()},
@@ -329,11 +332,11 @@ func TestDeleteAction(t *testing.T) {
 			},
 		},
 		{
-			name:    "unknown error",
-			args:    []string{shortCode},
-			action:  NewActions(listMaxLimit),
-			buf:     bytes.Buffer{},
-			isError: true,
+			name:         "unknown error",
+			args:         []string{shortCode},
+			listMaxLimit: 20,
+			buf:          bytes.Buffer{},
+			isError:      true,
 			expectedErrorResponse: ErrorResponse{
 				Error:   ErrUnexpected.Error(),
 				Details: fmt.Errorf("failed to delete short code: %q", shortCode).Error(),
@@ -347,7 +350,7 @@ func TestDeleteAction(t *testing.T) {
 		{
 			name:                  "when deleted variable is false",
 			args:                  []string{shortCode},
-			action:                NewActions(listMaxLimit),
+			listMaxLimit:          20,
 			buf:                   bytes.Buffer{},
 			isError:               true,
 			expectedErrorResponse: ErrorResponse{Error: fmt.Errorf("%w: %s", ErrUnableToDelete, shortCode).Error()},
@@ -364,7 +367,9 @@ func TestDeleteAction(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			err := tc.action.DeleteAction(ctx, &tc.buf, tc.svc, tc.args)
+			action := NewActions(tc.svc, tc.listMaxLimit)
+
+			err := action.DeleteAction(ctx, &tc.buf, tc.args)
 
 			if tc.isError {
 				var actualErrorResponse ErrorResponse
@@ -384,11 +389,11 @@ func TestDeleteAction(t *testing.T) {
 }
 
 func TestListAction(t *testing.T) {
-	listMaxLimit := 20
 	testCases := []struct {
 		name                  string
 		offset                int
 		limit                 int
+		listMaxLimit          int
 		buf                   bytes.Buffer
 		isError               bool
 		expectedErrorResponse ErrorResponse
@@ -397,11 +402,11 @@ func TestListAction(t *testing.T) {
 		svc                   shortener.URLShortener
 	}{
 		{
-			name:   "success",
-			offset: 0,
-			limit:  2,
-			action: NewActions(listMaxLimit),
-			buf:    bytes.Buffer{},
+			name:         "success",
+			offset:       0,
+			limit:        2,
+			listMaxLimit: 20,
+			buf:          bytes.Buffer{},
 			expectedListResponse: ListResponse{
 				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
@@ -420,11 +425,11 @@ func TestListAction(t *testing.T) {
 			},
 		},
 		{
-			name:   "success when limit max is zero",
-			offset: 0,
-			limit:  2,
-			action: NewActions(0),
-			buf:    bytes.Buffer{},
+			name:         "success when limit max is zero",
+			offset:       0,
+			limit:        2,
+			listMaxLimit: -20,
+			buf:          bytes.Buffer{},
 			expectedListResponse: ListResponse{
 				Items: []ResultResponse{
 					{RawURL: "https://anewball.com", ShortCode: "nMHdgTh"},
@@ -446,13 +451,13 @@ func TestListAction(t *testing.T) {
 			name:                 "limit less than zero",
 			offset:               0,
 			limit:                -2,
-			action:               NewActions(listMaxLimit),
+			listMaxLimit:         20,
 			buf:                  bytes.Buffer{},
 			expectedListResponse: ListResponse{},
 			isError:              true,
 			expectedErrorResponse: ErrorResponse{
 				Error:   ErrLimit.Error(),
-				Details: fmt.Errorf("limit must be between 1 and %d; got %d", listMaxLimit, -2).Error(),
+				Details: fmt.Errorf("limit must be between 1 and %d; got %d", 20, -2).Error(),
 			},
 			svc: &mockedShortener{},
 		},
@@ -460,7 +465,7 @@ func TestListAction(t *testing.T) {
 			name:                 "offset less than zero",
 			offset:               -2,
 			limit:                2,
-			action:               NewActions(listMaxLimit),
+			listMaxLimit: 20,
 			buf:                  bytes.Buffer{},
 			expectedListResponse: ListResponse{},
 			isError:              true,
@@ -474,7 +479,7 @@ func TestListAction(t *testing.T) {
 			name:                 "error query",
 			offset:               0,
 			limit:                2,
-			action:               NewActions(listMaxLimit),
+			listMaxLimit: 20,
 			buf:                  bytes.Buffer{},
 			expectedListResponse: ListResponse{},
 			isError:              true,
@@ -492,7 +497,7 @@ func TestListAction(t *testing.T) {
 			name:                 "error scan",
 			offset:               0,
 			limit:                2,
-			action:               NewActions(listMaxLimit),
+			listMaxLimit: 20,
 			buf:                  bytes.Buffer{},
 			expectedListResponse: ListResponse{},
 			isError:              true,
@@ -510,7 +515,7 @@ func TestListAction(t *testing.T) {
 			name:                 "error rows",
 			offset:               0,
 			limit:                2,
-			action:               NewActions(listMaxLimit),
+			listMaxLimit: 20,
 			buf:                  bytes.Buffer{},
 			expectedListResponse: ListResponse{},
 			isError:              true,
@@ -528,7 +533,7 @@ func TestListAction(t *testing.T) {
 			name:                 "unknown error",
 			offset:               0,
 			limit:                2,
-			action:               NewActions(listMaxLimit),
+			listMaxLimit: 20,
 			buf:                  bytes.Buffer{},
 			expectedListResponse: ListResponse{},
 			isError:              true,
@@ -549,7 +554,9 @@ func TestListAction(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 
-			err := tc.action.ListAction(ctx, tc.limit, tc.offset, &tc.buf, tc.svc)
+			action := NewActions(tc.svc, tc.listMaxLimit)
+
+			err := action.ListAction(ctx, tc.limit, tc.offset, &tc.buf)
 
 			if tc.isError {
 				var actualErrorResponse ErrorResponse

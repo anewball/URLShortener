@@ -6,7 +6,6 @@ import (
 	"io"
 	"testing"
 
-	"github.com/anewball/urlshortener/internal/shortener"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +17,7 @@ func TestNewAdd(t *testing.T) {
 	var gotArgs []string
 
 	mActions := &mockedActions{
-		AddActionFunc: func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+		addActionFunc: func(ctx context.Context, out io.Writer, args []string) error {
 			called = true
 			gotCtx = ctx
 			gotOut = out
@@ -27,7 +26,7 @@ func TestNewAdd(t *testing.T) {
 		},
 	}
 
-	cmd := NewAdd(mActions, &mockedShortener{})
+	cmd := NewAdd(mActions)
 
 	assert.Equal(t, "add <url>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -56,7 +55,7 @@ func TestNewGet(t *testing.T) {
 	var gotArgs []string
 
 	mActions := &mockedActions{
-		GetActionFunc: func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+		getActionFunc: func(ctx context.Context, out io.Writer, args []string) error {
 			called = true
 			gotCtx = ctx
 			gotOut = out
@@ -65,7 +64,7 @@ func TestNewGet(t *testing.T) {
 		},
 	}
 
-	cmd := NewGet(mActions, &mockedShortener{})
+	cmd := NewGet(mActions)
 
 	assert.Equal(t, "get <code>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -94,7 +93,7 @@ func TestNewDelete(t *testing.T) {
 	var gotArgs []string
 
 	mActions := &mockedActions{
-		DeleteActionFunc: func(ctx context.Context, out io.Writer, svc shortener.URLShortener, args []string) error {
+		deleteActionFunc: func(ctx context.Context, out io.Writer, args []string) error {
 			called = true
 			gotCtx = ctx
 			gotOut = out
@@ -103,7 +102,7 @@ func TestNewDelete(t *testing.T) {
 		},
 	}
 
-	cmd := NewDelete(mActions, &mockedShortener{})
+	cmd := NewDelete(mActions)
 
 	assert.Equal(t, "delete <code>", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -131,7 +130,7 @@ func TestNewList(t *testing.T) {
 	var gotOut io.Writer
 
 	mActions := &mockedActions{
-		ListActionFunc: func(ctx context.Context, limit int, offset int, out io.Writer, svc shortener.URLShortener) error {
+		listActionFunc: func(ctx context.Context, limit int, offset int, out io.Writer) error {
 			called = true
 			gotCtx = ctx
 			gotOut = out
@@ -139,7 +138,7 @@ func TestNewList(t *testing.T) {
 		},
 	}
 
-	cmd := NewList(mActions, &mockedShortener{})
+	cmd := NewList(mActions)
 
 	assert.Equal(t, "list", cmd.Use)
 	assert.NotNil(t, cmd.RunE)
@@ -159,7 +158,7 @@ func TestNewList(t *testing.T) {
 }
 
 func TestNewRoot(t *testing.T) {
-	cmd := NewRoot(&mockedActions{}, &mockedShortener{})
+	cmd := NewRoot(&mockedActions{})
 
 	assert.Equal(t, "urlshortener", cmd.Use)
 }
