@@ -25,7 +25,7 @@ var (
 	ErrAdd               = errors.New("could not create a short link. Please try again")
 	ErrUnsupported       = errors.New("error not supported")
 	ErrShortCode         = errors.New("shortCode is required")
-	ErrNotFound          = errors.New("no short link found for code")
+	ErrNotFound          = errors.New("no short link found for the provided shortCode")
 	ErrTimeout           = errors.New("request timed out while retrieving the short link. Please try again later")
 	ErrUnexpected        = errors.New("unexpected error. Please try again later")
 	ErrQuery             = errors.New("an error occurred while retrieving URLs")
