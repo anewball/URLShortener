@@ -212,7 +212,7 @@ func TestGetAction(t *testing.T) {
 			action:                NewActions(20),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrShortCodeRequired.Error(), Details: shortener.ErrEmptyShortCode.Error()},
+			expectedErrorResponse: ErrorResponse{Error: ErrShortCode.Error(), Details: shortener.ErrEmptyShortCode.Error()},
 			svc: &mockedShortener{
 				getFunc: func(ctx context.Context, url string) (string, error) {
 					return "", shortener.ErrEmptyShortCode
@@ -367,7 +367,7 @@ func TestDeleteAction(t *testing.T) {
 			action:                NewActions(listMaxLimit),
 			buf:                   bytes.Buffer{},
 			isError:               true,
-			expectedErrorResponse: ErrorResponse{Error: ErrShortCodeRequired.Error(), Details: shortener.ErrEmptyShortCode.Error()},
+			expectedErrorResponse: ErrorResponse{Error: ErrShortCode.Error(), Details: shortener.ErrEmptyShortCode.Error()},
 			svc: &mockedShortener{
 				deleteFunc: func(ctx context.Context, url string) (bool, error) {
 					return false, shortener.ErrEmptyShortCode
