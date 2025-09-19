@@ -11,6 +11,7 @@ import (
 
 	"github.com/anewball/urlshortener/cmd"
 	"github.com/anewball/urlshortener/config"
+	"github.com/anewball/urlshortener/core"
 	"github.com/anewball/urlshortener/env"
 	"github.com/anewball/urlshortener/internal/db"
 	"github.com/anewball/urlshortener/internal/shortener"
@@ -49,15 +50,15 @@ func run() error {
 		log.Println("Database connection pool closed")
 	}()
 
-	actions := cmd.NewActions(cfg.ListMaxLimit)
-
 	gen := shortener.NewNanoID(shortener.Alphabet)
 	svc, err := shortener.New(querier, gen)
 	if err != nil {
 		return err
 	}
 
-	root := cmd.NewRoot(actions, svc)
+	actions := core.NewActions(svc, cfg.ListMaxLimit)
+
+	root := cmd.NewRoot(actions)
 	root.SetContext(ctx)
 	root.SetArgs(os.Args[1:])
 
