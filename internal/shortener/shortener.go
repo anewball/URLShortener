@@ -14,23 +14,23 @@ import (
 const maxURLLength = 2048
 
 var (
-	ErrNotFound       = errors.New("short URL not found")
-	ErrEmptyShortCode = errors.New("short URL cannot be empty")
-	ErrScheme         = errors.New("only http/https are supported")
-	ErrEmptyScheme    = errors.New("URL scheme cannot be empty")
-	ErrEmptyHost      = errors.New("URL host cannot be empty")
-	ErrTooLong        = fmt.Errorf("URL exceeds maximum length of %d characters", maxURLLength)
-	ErrParse          = errors.New("URL could not be parsed")
-	ErrEmptyURL       = errors.New("URL cannot be empty")
-	ErrGenerate       = errors.New("failed to generate short URL")
-	ErrExec           = errors.New("failed to execute database command")
-	ErrIsValidURL     = errors.New("invalid URL")
-	ErrQuery          = errors.New("failed to execute query")
-	ErrScan           = errors.New("failed to scan row")
-	ErrDBNil          = errors.New("database connection is nil")
-	ErrNanoIDNil      = errors.New("NanoID generator is nil")
-	ErrQueryRow       = errors.New("no rows in result set")
-	ErrRows           = errors.New("rows produced an error")
+	ErrNotFound    = errors.New("short URL not found")
+	ErrShortCode   = errors.New("short URL cannot be empty")
+	ErrScheme      = errors.New("only http/https are supported")
+	ErrEmptyScheme = errors.New("URL scheme cannot be empty")
+	ErrEmptyHost   = errors.New("URL host cannot be empty")
+	ErrTooLong     = fmt.Errorf("URL exceeds maximum length of %d characters", maxURLLength)
+	ErrParse       = errors.New("URL could not be parsed")
+	ErrEmptyURL    = errors.New("URL cannot be empty")
+	ErrGenerate    = errors.New("failed to generate short URL")
+	ErrExec        = errors.New("failed to execute database command")
+	ErrIsValidURL  = errors.New("invalid URL")
+	ErrQuery       = errors.New("failed to execute query")
+	ErrScan        = errors.New("failed to scan row")
+	ErrDBNil       = errors.New("database connection is nil")
+	ErrNanoIDNil   = errors.New("NanoID generator is nil")
+	ErrQueryRow    = errors.New("no rows in result set")
+	ErrRows        = errors.New("rows produced an error")
 )
 
 type URLShortener interface {
@@ -96,7 +96,7 @@ func (s *shortener) Add(ctx context.Context, rawURL string) (string, error) {
 
 func (s *shortener) Get(ctx context.Context, shortCode string) (string, error) {
 	if shortCode == empty {
-		return empty, fmt.Errorf("%w: %v", ErrEmptyShortCode, empty)
+		return empty, fmt.Errorf("%w: %v", ErrShortCode, empty)
 	}
 
 	var originalURL string
@@ -136,7 +136,7 @@ func (s *shortener) List(ctx context.Context, limit, offset int) ([]URLItem, err
 
 func (s *shortener) Delete(ctx context.Context, shortCode string) (bool, error) {
 	if shortCode == empty {
-		return false, fmt.Errorf("%w", ErrEmptyShortCode)
+		return false, fmt.Errorf("%w", ErrShortCode)
 	}
 
 	cmdTag, err := s.db.Exec(ctx, DeleteQuery, shortCode)
